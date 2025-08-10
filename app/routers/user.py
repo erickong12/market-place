@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
-from requests import Session
+from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.core.dependency import require_roles
-from app.services.user import get_user_by_id, get_user_paginated
+from app.services.user import UserService
 from app.utils.enums import RoleEnum
 
 router = APIRouter(
@@ -19,12 +19,14 @@ async def list_users(
     size: int = 10,
     sort_by: str = "id",
     order: str = "asc",
-    search: str = None,
+    search: str | None = None,
     db: Session = Depends(get_db),
 ):
-    return get_user_paginated(db, page, size, sort_by, order, search)
+    service = UserService(db)
+    return service.get_user_paginated(page, size, sort_by, order, search)
 
 
 @router.get("/{user_id}")
 async def get_user(user_id: str, db: Session = Depends(get_db)):
-    return get_user_by_id(db, user_id)
+    service = UserService(db)
+    return service.get_user_by_id(user_id)

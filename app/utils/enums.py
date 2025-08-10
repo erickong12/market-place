@@ -8,9 +8,9 @@ class RoleEnum(str, enum.Enum):
 
 
 class OrderStatus(str, enum.Enum):
-    PENDING = "pending"
-    CONFIRMED = "confirmed"
-    READY = "ready"
-    DONE = "done"
-    CANCELLED = "cancelled"
-    AUTO_CANCELLED = "auto_cancelled"
+    PENDING = "PENDING"
+    CONFIRMED = "CONFIRMED"
+    READY = "READY_TO_PICKUP"
+    DONE = "DONE"
+    CANCELLED = "CANCELLED"
+    AUTO_CANCELLED = "AUTO_CANCELLED"

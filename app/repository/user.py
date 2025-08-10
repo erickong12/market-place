@@ -1,58 +1,45 @@
-from requests import Session
-
+from sqlalchemy.orm import Session
 from app.models.user import User
 from app.repository.common import find_all_paginated
 from app.schemas.user import UserCreate, UserUpdate
-from app.utils import util
+from typing import Optional
 
 
-def find_all_paginated_users(
-    db: Session, skip: int, limit: int, sort_by: str, order: str, search: str | None
-):
-    query = db.query(User)
-    if search is not None:
-        query = query.filter((User.name.ilike(search)) | (User.username.ilike(search)))
-    return find_all_paginated(query, User, skip, limit, sort_by, order)
+class UserRepository:
+    def __init__(self, db: Session):
+        self.db = db
 
+    def find_all_paginated_users(
+        self, skip: int, limit: int, sort_by: str, order: str, search: Optional[str]
+    ):
+        query = self.db.query(User)
 
-def find_user_by_id(db: Session, user_id: str):
-    return db.query(User).filter(User.id == user_id, User.delete == False).first()
+        if search:
+            query = query.filter(
+                User.username.icontains(search) | User.name.icontains(search)
+            )
+        return find_all_paginated(query, User, skip, limit, sort_by, order)
 
+    def find_user_by_id(self, user_id: str) -> Optional[User]:
+        return self.db.query(User).filter(User.id == user_id).first()
 
-def find_user_by_username(db: Session, username: str):
-    return (
-        db.query(User).filter(User.username == username, User.delete == False).first()
-    )
+    def find_user_by_username(self, username: str) -> Optional[User]:
+        return self.db.query(User).filter(User.username == username).first()
 
+    def create_user(self, data: UserCreate) -> User:
+        user = User(**data.model_dump())
+        self.db.add(user)
+        self.db.commit()
+        self.db.refresh(user)
+        return user
 
-def create_user(db: Session, user_data: UserCreate):
-    user = User(
-        name=user_data.name,
-        address=user_data.address,
-        phone=user_data.phone,
-        username=user_data.username,
-        password=util.hash_password(user_data.password),
-        role=user_data.role,
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
+    def update_user(self, entity: User, data: UserUpdate) -> User:
+        for field, value in data.model_dump(exclude_unset=True).items():
+            setattr(entity, field, value)
+        self.db.commit()
+        self.db.refresh(entity)
+        return entity
 
-
-def update_user(db: Session, user: User, user_data: UserUpdate):
-    user.name = user_data.name
-    user.address = user_data.address
-    user.phone = user_data.phone
-    user.username = user_data.username
-    if user_data.password is not None:
-        user.password = util.hash_password(user_data.password)
-    user.role = user_data.role
-    db.commit()
-    db.refresh(user)
-    return user
-
-
-def delete_user(db: Session, user: User) -> None:
-    user.delete = True
-    db.commit()
+    def delete_user(self, entity: User) -> None:
+        entity.delete = True
+        self.db.commit()

@@ -1,24 +1,25 @@
 from fastapi import APIRouter, Depends, Request
-from requests import Session
-from app.database.session import get_db
-from app.schemas.inventory import SellerInventoryCreate, SellerInventoryResponse
-from app.models.inventory import SellerInventory
+from sqlalchemy.orm import Session
 from typing import List
 
-router = APIRouter(prefix="/inventory", tags=["Seller Inventory"])
+from app.database.session import get_db
+from app.schemas.inventory import SellerInventoryCreate, SellerInventoryResponse
+from app.services.inventory import SellerInventoryService
 
-
-@router.post("/", response_model=SellerInventoryResponse)
-def add_inventory(
-    payload: SellerInventoryCreate, request: Request, db: Session = Depends(get_db)
-):
-    inventory = SellerInventory(seller_id=request.state.user.id, **payload)
-    db.add(inventory)
-    db.commit()
-    db.refresh(inventory)
-    return inventory
+router = APIRouter(prefix="/secured/inventory", tags=["Seller Inventory"])
 
 
 @router.get("/", response_model=List[SellerInventoryResponse])
 def list_inventory(db: Session = Depends(get_db)):
-    return db.query(SellerInventory).all()
+    service = SellerInventoryService(db)
+    return service.list_all_inventory()
+
+
+@router.post("/", response_model=SellerInventoryResponse)
+def add_inventory(
+    payload: SellerInventoryCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    service = SellerInventoryService(db)
+    return service.add_inventory_with_seller(payload, request.state.user.id)

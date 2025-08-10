@@ -1,52 +1,34 @@
+from pydantic import BaseModel, Field
+from typing import List
 from datetime import datetime
-
-from pydantic import BaseModel, ConfigDict
-
-from app.models.order import OrderStatus
-from app.schemas.common import PageResponse
-from app.schemas.inventory import SellerInventoryResponse
-from app.schemas.user import UserOut
+from app.utils.enums import OrderStatus
 
 
 class OrderItemCreate(BaseModel):
-    seller_inventory_id: int
-    quantity: int
+    product_id: str
+    quantity: int = Field(..., gt=0)
 
 
 class OrderCreate(BaseModel):
-    items: list[OrderItemCreate]
+    seller_id: str
+    items: List[OrderItemCreate]
 
 
 class OrderItemResponse(BaseModel):
-    inventory: SellerInventoryResponse
+    product_id: str
     quantity: int
-    price_at_purchase: float
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class OrderDetail(BaseModel):
-    id: int
-    buyer: UserOut
-    seller: UserOut
-    status: OrderStatus
-    created_at: datetime
-    updated_at: datetime
-    items: list[OrderItemResponse]
-
-    model_config = ConfigDict(from_attributes=True)
+    price: float  # price at the time of order
 
 
 class OrderResponse(BaseModel):
-    id: int
+    id: str
+    buyer_id: str
+    seller_id: str
     status: OrderStatus
     created_at: datetime
     updated_at: datetime
-    items: list[OrderItemResponse]
-
-    model_config = ConfigDict(from_attributes=True)
+    items: List[OrderItemResponse]
 
 
-class OrderPageResponse(BaseModel):
-    data: list[OrderResponse]
-    page: PageResponse
+class OrderStatusUpdate(BaseModel):
+    status: OrderStatus

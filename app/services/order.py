@@ -1,74 +1,78 @@
-from datetime import datetime
+from sqlalchemy.orm import Session
+from app.core.exception import BusinessError
+from app.repository.inventory import SellerInventoryRepository
+from app.repository.order import OrderRepository
+from app.schemas.order import (
+    OrderCreate,
+    OrderResponse,
+    OrderStatus,
+)
+from typing import List
 
-from fastapi import HTTPException
-from sqlalchemy.exc import IntegrityError
-from requests import Session
-
-from app.core import exception
-from app.core.exception import UnauthorizedUserException
-from app.models.cart import CartItem
-from app.models.order import Order, OrderItem, OrderStatus
-from app.services import inventory
-
-
-def get_orders(buyer_id: int, db: Session):
-    return db.query(Order).filter(Order.buyer_id == buyer_id).all()
+from app.utils import util
 
 
-def get_order_by_id(order_id: int, db: Session):
-    order = db.query(Order).filter(Order.id == order_id).first()
-    if not order:
-        raise exception.RECORD_NOT_FOUND
-    return order
+class OrderService:
+    def __init__(self, db: Session):
+        self.db = db
+        self.repo = OrderRepository(db)
+        self.repo_seller_inventory = SellerInventoryRepository(db)
 
-
-def checkout_order(buyer_id: int, db: Session):
-    cart_items = db.query(CartItem).filter(CartItem.buyer_id == buyer_id).all()
-    if not cart_items:
-        raise HTTPException(status_code=400, detail="Cart is empty")
-
-    seller_ids = {item.seller_inventory.seller_id for item in cart_items}
-    if len(seller_ids) != 1:
-        raise UnauthorizedUserException()
-    seller_id = seller_ids.pop()
-
-    try:
-        order = Order(
-            buyer_id=buyer_id,
-            seller_id=seller_id,
-            status=OrderStatus.PENDING,
-            created_at=datetime.now(),
-            updated_at=datetime.now(),
-        )
-        db.add(order)
-        db.flush()
-
-        for item in cart_items:
-            inv = inventory.get_inventory_by_id(db, item.seller_inventory_id)
-
-            if not inv or inv.quantity < item.quantity:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Not enough stock for item {inv.product_id}",
-                )
-
-            inv.quantity -= item.quantity
-            db.add(
-                OrderItem(
-                    order_id=order.id,
-                    seller_inventory_id=item.seller_inventory_id,
-                    quantity=item.quantity,
-                    price_at_purchase=inv.price,
+    def create_order(self, buyer_id: str, order_data: OrderCreate) -> OrderResponse:
+        # Could add validation: check stock, seller exists, etc.
+        for item in order_data.items:
+            seller_inventory = (
+                self.repo_seller_inventory.get_inventory_by_product_and_seller(
+                    item.product_id, order_data.seller_id
                 )
             )
+            if seller_inventory is None:
+                raise BusinessError("Record Not Found")
+            if seller_inventory.quantity < item.quantity:
+                raise BusinessError("Not enough stock for")
+        order = self.repo.create_order(buyer_id, order_data)
+        return self._map_order_to_response(order)
 
-        db.query(CartItem).filter(CartItem.buyer_id == buyer_id).delete()
-        db.commit()
-        db.refresh(order)
-        return order
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=500, detail="Internal server error")
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail="Internal server error")
+    def get_orders_by_buyer(self, buyer_id: str) -> List[OrderResponse]:
+        orders = self.repo.get_orders_by_buyer(buyer_id)
+        return [self._map_order_to_response(o) for o in orders]
+
+    def get_orders_by_seller(self, seller_id: str) -> List[OrderResponse]:
+        orders = self.repo.get_orders_by_seller(seller_id)
+        return [self._map_order_to_response(o) for o in orders]
+
+    def update_order_status(
+        self, order_id: str, new_status: OrderStatus, seller_id: str
+    ) -> OrderResponse:
+        order = self.repo.get_order_by_id(order_id)
+        if order is None:
+            raise BusinessError("Record Not Found")
+
+        if order.seller_id != seller_id:
+            raise BusinessError("Unauthorized to update this order")
+
+        # Validate allowed transitions (simple example)
+        if not util.valid_status_transition(order.status, new_status.value):
+            raise BusinessError("Invalid order status transition")
+
+        updated_order = self.repo.update_order_status(order, new_status)
+        return self._map_order_to_response(updated_order)
+
+    def _map_order_to_response(self, order) -> OrderResponse:
+        # Map ORM order + items to Pydantic response
+        return OrderResponse(
+            id=order.id,
+            buyer_id=order.buyer_id,
+            seller_id=order.seller_id,
+            status=order.status,
+            created_at=order.created_at,
+            updated_at=order.updated_at,
+            items=[
+                {
+                    "product_id": item.product_id,
+                    "quantity": item.quantity,
+                    "price": item.price,
+                }
+                for item in order.items
+            ],
+        )

@@ -1,10 +1,15 @@
 from fastapi import APIRouter, Depends, File, Form, UploadFile
-from requests import Session
+from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.core.dependency import require_roles
-from app.schemas.product import ProductCreate, ProductPageResponse
-from app.services import product
+from app.schemas.product import (
+    ProductCreate,
+    ProductUpdate,
+    ProductPageResponse,
+    ProductResponse,
+)
+from app.services.product import ProductService
 from app.utils.enums import RoleEnum
 
 router = APIRouter(prefix="/secured/products", tags=["Products"])
@@ -16,13 +21,18 @@ def list_products(
     size: int = 10,
     sort_by: str = "id",
     order: str = "asc",
-    search: str = None,
+    search: str | None = None,
     db: Session = Depends(get_db),
 ):
-    return product.get_product_paginated(db, page, size, sort_by, order, search)
+    service = ProductService(db)
+    return service.get_product_paginated(page, size, sort_by, order, search)
 
 
-@router.post("/create", dependencies=[Depends(require_roles(RoleEnum.ADMIN))])
+@router.post(
+    "/create",
+    dependencies=[Depends(require_roles(RoleEnum.ADMIN))],
+    response_model=ProductResponse,
+)
 async def add_product(
     name: str = Form(...),
     description: str = Form(""),
@@ -30,27 +40,24 @@ async def add_product(
     image: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
-    data = ProductCreate(
-        name=name,
-        description=description,
-        price=price,
-    )
-    return product.insert_product(db, data, image)
+    service = ProductService(db)
+    data = ProductCreate(name=name, description=description, price=price)
+    return await service.insert_product(data, image)
 
 
-@router.put("/update", dependencies=[Depends(require_roles(RoleEnum.ADMIN))])
+@router.put(
+    "/update",
+    dependencies=[Depends(require_roles(RoleEnum.ADMIN))],
+    response_model=ProductResponse,
+)
 async def update_product(
     id: str = Form(...),
     name: str = Form(...),
     description: str = Form(""),
     price: float = Form(...),
-    image: UploadFile = File(...),
+    image: UploadFile = File(None),
     db: Session = Depends(get_db),
 ):
-    data = ProductCreate(
-        id=id,
-        name=name,
-        description=description,
-        price=price,
-    )
-    return product.update_product(db, data, image)
+    service = ProductService(db)
+    data = ProductUpdate(id=id, name=name, description=description, price=price)
+    return await service.update_product(data, image)

@@ -5,18 +5,20 @@ from fastapi.responses import JSONResponse
 
 # definitions
 
+
+class BusinessError(HTTPException):
+    def __init__(self, detail: str):
+        super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+
+
 INVALID_CREDENTIALS = HTTPException(
     detail="Invalid credentials", status_code=status.HTTP_401_UNAUTHORIZED
 )
 UNAUTHORIZED = HTTPException(
     detail="Unauthorized", status_code=status.HTTP_403_FORBIDDEN
 )
-RECORD_NOT_FOUND = HTTPException(
-    detail="Record not found", status_code=status.HTTP_404_NOT_FOUND
-)
-RECORD_ALREADY_EXISTS = HTTPException(
-    detail="Record already exists", status_code=status.HTTP_409_CONFLICT
-)
+
+
 # handlers
 
 
