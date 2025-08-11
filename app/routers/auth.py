@@ -1,14 +1,13 @@
 from typing_extensions import Annotated
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from requests import Session
 
 from app.database.session import get_db
-from app.schemas.user import UserCreate
-from app.services import auth, user
-from app.utils.enums import RoleEnum
+from app.schemas.user import UserCreate, UserUpdate
+from app.services.auth_service import AuthService
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(tags=["Authentication"])
 
 
 @router.post("/login")
@@ -16,16 +15,34 @@ def login(
     credentials: Annotated[HTTPBasicCredentials, Depends(HTTPBasic())],
     db: Session = Depends(get_db),
 ):
-    return auth.authenticate_user(db, credentials.username, credentials.password)
+    service = AuthService(db)
+    return service.authenticate_user(credentials.username, credentials.password)
 
 
-@router.post("/register/seller")
+@router.post("/register")
 def register_seller(data: UserCreate, db: Session = Depends(get_db)):
-    data.role = RoleEnum.SELLER
-    return user.insert_user(db, data)
+    service = AuthService(db)
+    return service.register_user(data)
 
 
-@router.post("/register/buyer")
-def register_seller(data: UserCreate, db: Session = Depends(get_db)):
-    data.role = RoleEnum.BUYER
-    return user.insert_user(db, data)
+@router.get("/secured/profile")
+def get_profile(request: Request, db: Session = Depends(get_db)):
+    service = AuthService(db)
+    return service.get_profile(request.state.user.id)
+
+
+@router.patch("/secured/profile")
+def update_profile(data: UserUpdate, request: Request, db: Session = Depends(get_db)):
+    service = AuthService(db)
+    return service.update_profile(request.state.user.id, data)
+
+
+@router.patch("/secured/change-password")
+def change_password(
+    old_password: str,
+    new_password: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    service = AuthService(db)
+    return service.change_password(request.state.user.id, old_password, new_password)

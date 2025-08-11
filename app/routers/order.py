@@ -1,71 +1,77 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
 
 from app.database.session import get_db
-from app.schemas.order import OrderCreate, OrderResponse, OrderStatusUpdate
 from app.services.order import OrderService
 from app.core.dependency import require_roles
 from app.utils.enums import RoleEnum
 
-router = APIRouter(prefix="/orders", tags=["Orders"])
+router = APIRouter(prefix="/secured/orders", tags=["Orders"])
 
 
-# Buyer places a new order
-@router.post("/", response_model=OrderResponse)
-def create_order(
-    order_data: OrderCreate,
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    buyer_id = request.state.user.id
+@router.get("/", dependencies=[Depends(require_roles(RoleEnum.SELLER, RoleEnum.BUYER))])
+def list_orders_by_seller(request: Request, db: Session = Depends(get_db)):
     service = OrderService(db)
-    return service.create_order(buyer_id, order_data)
+    return service.list_orders_by_seller(request.state.user)
 
 
-# Buyer views their order history
-@router.get("/buyer", response_model=List[OrderResponse])
-def get_buyer_orders(
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    buyer_id = request.state.user.id
-    service = OrderService(db)
-    return service.get_orders_by_buyer(buyer_id)
-
-
-# Seller views their order history
 @router.get(
-    "/seller",
-    response_model=List[OrderResponse],
-    dependencies=[Depends(require_roles(RoleEnum.SELLER))],
+    "/{order_id}",
+    dependencies=[Depends(require_roles(RoleEnum.SELLER, RoleEnum.BUYER))],
 )
-def get_seller_orders(
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    seller_id = request.state.user.id
+def get_order(order_id: str, request: Request, db: Session = Depends(get_db)):
     service = OrderService(db)
-    return service.get_orders_by_seller(seller_id)
+    order = service.get_order(order_id, request.state.user)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return order
 
 
-# Seller updates order status (confirm, reject, ready to pickup, done, cancel)
 @router.patch(
-    "/{order_id}/status",
+    "/{order_id}/confirm", dependencies=[Depends(require_roles(RoleEnum.SELLER))]
+)
+def confirm_order(order_id: str, request: Request, db: Session = Depends(get_db)):
+    service = OrderService(db)
+    order = service.confirm_order(order_id, request.state.user)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return order
+
+
+@router.patch(
+    "/{order_id}/reject", dependencies=[Depends(require_roles(RoleEnum.SELLER))]
+)
+def reject_order(order_id: str, request: Request, db: Session = Depends(get_db)):
+    service = OrderService(db)
+    service.reject_order(order_id, request.state.user)
+
+
+@router.patch(
+    "/{order_id}/ready",
     dependencies=[Depends(require_roles(RoleEnum.SELLER))],
 )
-def update_order_status(
-    order_id: str,
-    status_update: OrderStatusUpdate,
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    seller_id = request.state.user.id
+def ready_order(order_id: str, request: Request, db: Session = Depends(get_db)):
     service = OrderService(db)
-    try:
-        updated_order = service.update_order_status(
-            order_id, status_update.status, seller_id
-        )
-        return updated_order
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    order = service.ready_order(order_id, request.state.user)
+
+
+@router.patch("/{order_id}/done", dependencies=[Depends(require_roles(RoleEnum.BUYER))])
+def complete_order(order_id: str, request: Request, db: Session = Depends(get_db)):
+    service = OrderService(db)
+    order = service.complete_order(order_id, request.state.user)
+
+
+@router.patch(
+    "/{order_id}/cancel", dependencies=[Depends(require_roles(RoleEnum.BUYER))]
+)
+def cancel_order(order_id: str, request: Request, db: Session = Depends(get_db)):
+    service = OrderService(db)
+    order = service.cancel_order(order_id, request.state.user)
+
+
+@router.get(
+    "/history", dependencies=[Depends(require_roles(RoleEnum.BUYER, RoleEnum.SELLER))]
+)
+def order_history(request: Request, db: Session = Depends(get_db)):
+    service = OrderService(db)
+    return service.get_order_history(request.state.user.id)

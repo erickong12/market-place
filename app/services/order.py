@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from app.core.exception import BusinessError
-from app.repository.inventory import SellerInventoryRepository
-from app.repository.order import OrderRepository
+from app.repository.inventory_repository import SellerInventoryRepository
+from app.repository.order_repository import OrderRepository
 from app.schemas.order import (
     OrderCreate,
     OrderResponse,

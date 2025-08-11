@@ -2,7 +2,7 @@ from fastapi import Request
 from jose import JWTError
 from app.database.session import get_db_session
 from app.core.exception import UNAUTHORIZED
-from app.repository.user import find_user_by_id
+from app.repository.user_repository import UserRepository
 from app.utils import util
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -43,7 +43,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 raise UNAUTHORIZED
 
             with get_db_session() as db:
-                user = find_user_by_id(db, user_id)
+                user = UserRepository(db).find_by_id(user_id)
             if not user:
                 raise UNAUTHORIZED
 

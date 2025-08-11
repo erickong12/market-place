@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.core.exception import BusinessError
-from app.repository.inventory import SellerInventoryRepository
+from app.repository.inventory_repository import SellerInventoryRepository
 from app.schemas.inventory import (
     SellerInventoryCreate,
     SellerInventoryResponse,

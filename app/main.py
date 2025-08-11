@@ -5,7 +5,7 @@ from app.database.base import Base
 from app.database.session import engine
 from app.core.exception import http_exception_handler
 from app.core.middleware import AuthMiddleware
-from app.routers import auth, product, user
+from app.routers import admin, auth, cart, order, product, seller_inventory
 
 Base.metadata.create_all(bind=engine)
 
@@ -14,12 +14,14 @@ app = FastAPI()
 app.add_exception_handler(Exception, http_exception_handler)
 
 app.add_middleware(AuthMiddleware)
+
 app.include_router(auth.router)
-app.include_router(user.router)
+app.include_router(admin.router)
 app.include_router(product.router)
-# app.include_router(inventory.router, prefix="/inventory")
-# app.include_router(cart.router, prefix="/cart")
-# app.include_router(order.router, prefix="/orders")
+app.include_router(seller_inventory.router)
+app.include_router(cart.router)
+app.include_router(order.router)
+
 static_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
 if not os.path.exists(static_path):

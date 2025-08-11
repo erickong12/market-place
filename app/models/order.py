@@ -19,14 +19,18 @@ class Order(Base):
 
     buyer = relationship("User", foreign_keys=[buyer_id])
     seller = relationship("User", foreign_keys=[seller_id])
-    items = relationship("OrderItem", back_populates="order")
+    items = relationship(
+        "OrderItem", back_populates="order", cascade="all, delete-orphan"
+    )
 
 
 class OrderItem(Base):
     __tablename__ = "order_items"
-    id = Column(String, primary_key=True, index=True)
-    order_id = Column(String, ForeignKey("orders.id"))
-    seller_inventory_id = Column(String, ForeignKey("seller_inventory.id"))
+    id = Column(String, primary_key=True, index=True, default=lambda: str(uuid4()))
+    order_id = Column(String, ForeignKey("orders.id"), nullable=False)
+    seller_inventory_id = Column(
+        String, ForeignKey("seller_inventory.id"), nullable=False
+    )
     quantity = Column(Integer, nullable=False)
     price_at_purchase = Column(Integer, nullable=False)
 

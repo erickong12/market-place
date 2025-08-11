@@ -11,8 +11,13 @@ class UserCreate(BaseModel):
     phone: str
     username: str
     password: str
-    role: Optional[RoleEnum]
+    role: RoleEnum
 
+class UserUpdateProfile(BaseModel):
+    name: Optional[str]
+    address: Optional[str]
+    phone: Optional[str]
+    username: Optional[str]
 
 class UserUpdate(UserCreate):
     id: str
@@ -42,4 +47,3 @@ class UserPageResponse(BaseModel):
 
 class UserLoginResponse(BaseModel):
     access_token: str
-    token_type: str

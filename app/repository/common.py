@@ -3,7 +3,7 @@ from sqlalchemy.orm import Query
 from app.schemas.common import Page
 
 
-def find_all_paginated(
+def find_paginated(
     query: Query, model: object, skip: int, limit: int, sort_by: str, order: str
 ):
     """
