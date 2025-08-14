@@ -13,8 +13,18 @@ class SellerInventoryService:
         self.db = db
         self.repo = SellerInventoryRepository(db)
 
-    def list_all_inventory(self) -> list[SellerInventoryResponse]:
-        entities = self.repo.get_inventory_list()
+    def list_all_inventory(
+        self,
+        page: int,
+        size: int,
+        sort_by: str,
+        order: str,
+        search: str | None,
+        seller_id: str | None,
+    ) -> list[SellerInventoryResponse]:
+        entities = self.repo.get_inventory_list(
+            page, size, sort_by, order, search, seller_id
+        )
         return [SellerInventoryResponse(**e.__dict__) for e in entities]
 
     def get_inventory(self, inventory_id: int) -> SellerInventoryResponse:
@@ -34,5 +44,14 @@ class SellerInventoryService:
         entity = self.repo.get_inventory_by_id(data.id)
         if entity is None:
             raise BusinessError("Record Not Found")
-        updated_entity = self.repo.update_inventory(entity, data)
+        if data.quantity < 0:
+            raise BusinessError("Quantity cannot be negative")
+        updated_entity = self.repo.update(entity, data)
         return SellerInventoryResponse(**updated_entity.__dict__)
+
+    def delete_inventory(self, inventory_id: int, seller_id: int) -> dict:
+        entity = self.repo.get_by_id(inventory_id)
+        if entity is None:
+            raise BusinessError("Record Not Found")
+        self.repo.delete_inventory(entity)
+        return {"message": "Inventory deleted successfully"}

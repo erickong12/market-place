@@ -33,7 +33,7 @@ class CheckoutService:
                 order_items_to_create = []
 
                 for item in items:
-                    inv = self.inventory_repo.get_inventory_for_update(item.inventory_id)
+                    inv = self.inventory_repo.get_inventory_by_id(item.inventory_id)
                     if not inv:
                         raise HTTPException(status_code=404, detail=f"Inventory {item.inventory_id} not found")
 

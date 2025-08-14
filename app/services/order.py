@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from app.core.exception import BusinessError
+from app.models.order import Order
 from app.repository.inventory_repository import SellerInventoryRepository
 from app.repository.order_repository import OrderRepository
 from app.schemas.order import (
@@ -42,13 +43,12 @@ class OrderService:
         return [self._map_order_to_response(o) for o in orders]
 
     def update_order_status(
-        self, order_id: str, new_status: OrderStatus, seller_id: str
+        self, order_id: str, new_status: OrderStatus, user_id: str
     ) -> OrderResponse:
         order = self.repo.get_order_by_id(order_id)
         if order is None:
             raise BusinessError("Record Not Found")
-
-        if order.seller_id != seller_id:
+        if order.buyer_id != user_id and order.seller_id != user_id:
             raise BusinessError("Unauthorized to update this order")
 
         # Validate allowed transitions (simple example)
@@ -58,7 +58,7 @@ class OrderService:
         updated_order = self.repo.update_order_status(order, new_status)
         return self._map_order_to_response(updated_order)
 
-    def _map_order_to_response(self, order) -> OrderResponse:
+    def _map_order_to_response(self, order: Order) -> OrderResponse:
         # Map ORM order + items to Pydantic response
         return OrderResponse(
             id=order.id,

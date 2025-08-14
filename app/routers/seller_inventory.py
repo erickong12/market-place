@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from app.core.dependency import require_roles
 from app.database.session import get_db
 from app.schemas.inventory import SellerInventoryCreate
-from app.services.inventory import SellerInventoryService
+from app.services.inventory_service import SellerInventoryService
+from app.services.product_service import ProductService
 from app.utils.enums import RoleEnum
 
 router = APIRouter(
@@ -15,9 +16,25 @@ router = APIRouter(
 
 
 @router.get("/")
-def list_inventory(request: Request, db: Session = Depends(get_db)):
+def list_inventory(
+    request: Request,
+    page: int = 1,
+    size: int = 10,
+    sort_by: str = "id",
+    order: str = "asc",
+    search: str | None = None,
+    db: Session = Depends(get_db),
+):
     service = SellerInventoryService(db)
-    return service.list_all_inventory(request.state.user.id)
+    return service.list_all_inventory(
+        page, size, sort_by, order, search, request.state.user.id
+    )
+
+
+@router.get("/product/dropdown")
+def list_products_dropdown(db: Session = Depends(get_db)):
+    service = ProductService(db)
+    return service.list_products_dropdown()
 
 
 @router.post("/")

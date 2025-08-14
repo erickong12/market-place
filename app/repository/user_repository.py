@@ -18,14 +18,14 @@ class UserRepository:
             query = query.filter(
                 self.model.username.icontains(search)
                 | self.model.name.icontains(search)
-            )
+            ).filter(self.model.delete == False)
         return find_paginated(query, self.model, skip, limit, sort_by, order)
 
     def find_by_id(self, user_id: str) -> Optional[User]:
-        return self.db.query(self.model).filter(self.model.id == user_id).first()
+        return self.db.query(self.model).filter(self.model.id == user_id).filter(self.model.delete == False).first()
 
     def find_by_username(self, username: str) -> Optional[User]:
-        return self.db.query(self.model).filter(self.model.username == username).first()
+        return self.db.query(self.model).filter(self.model.username == username).filter(self.model.delete == False).first()
 
     def save(self, user: User) -> User:
         self.db.add(user)

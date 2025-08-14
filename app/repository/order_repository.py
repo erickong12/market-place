@@ -1,8 +1,6 @@
-from sqlalchemy import desc, func
+from sqlalchemy import desc
 from sqlalchemy.orm import Session, joinedload
-from app.models.inventory import SellerInventory
 from app.models.order import Order, OrderItem
-from app.models.product import Product
 from app.models.user import User
 from app.schemas.order import OrderStatus
 from typing import List, Optional
@@ -61,23 +59,6 @@ class OrderRepository:
         self.db.commit()
         self.db.refresh(order)
         return order
-
-    def get_top_products(db: Session, limit: int):
-        return (
-            db.query(
-                Product.id.label("product_id"),
-                Product.name.label("product_name"),
-                func.sum(OrderItem.quantity).label("total_sold"),
-            )
-            .join(SellerInventory, SellerInventory.id == OrderItem.seller_inventory_id)
-            .join(Product, Product.id == SellerInventory.product_id)
-            .join(Order, Order.id == OrderItem.order_id)
-            .filter(Order.status == OrderStatus.DONE)
-            .group_by(Product.id, Product.name)
-            .order_by(desc("total_sold"))
-            .limit(limit)
-            .all()
-        )
 
     def get_top_sellers(db: Session, limit: int):
         return (

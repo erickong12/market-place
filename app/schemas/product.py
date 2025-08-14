@@ -22,6 +22,11 @@ class ProductOut(ProductResponse):
     image: Optional[str]
     model_config = ConfigDict(from_attributes=True)
 
+class ProductLandingPage(BaseModel):
+    id: str
+    name: str
+    image: Optional[str]
+    model_config = ConfigDict(from_attributes=True)
 
 class ProductPageResponse(BaseModel):
     page: PageResponse

@@ -8,6 +8,8 @@ from app.core.exception import BusinessError
 from app.repository.product_repository import ProductRepository
 from app.schemas.product import (
     ProductCreate,
+    ProductLandingPage,
+    ProductOut,
     ProductPageResponse,
     ProductResponse,
     ProductUpdate,
@@ -33,7 +35,20 @@ class ProductService:
             result=result.data,
         )
 
+    def list_products_dropdown(self) -> list[ProductOut]:
+        result = self.repo.find_all()
+        return [ProductOut](
+            [ProductOut(**item.__dict__) for item in result]
+        )
+
+    def get_landing_page(self, limit: int) -> list[ProductLandingPage]:
+        result = self.repo.find_top_products(limit)
+        return [ProductLandingPage](
+            [ProductLandingPage(**item.__dict__) for item in result]
+        )
+
     def get_product_by_id(self, product_id: str) -> ProductResponse:
+        # Check if record exists
         entity = self.repo.find_by_id(product_id)
         if entity is None:
             raise BusinessError("Record Not Found")
@@ -42,43 +57,41 @@ class ProductService:
     async def insert_product(
         self, data: ProductCreate, image: UploadFile | None
     ) -> ProductResponse:
-        if image is not None:
-            file_path = os.path.join(UPLOAD_DIR, str(uuid4()))
-            with open(file_path, "wb") as buffer:
-                buffer.write(await image.read())
-            data.image = f"/{file_path}"
+        # Save image
+        file_path = os.path.join(UPLOAD_DIR, str(uuid4()))
+        with open(file_path, "wb") as buffer:
+            buffer.write(await image.read())
+        data.image = f"/{file_path}"
         entity = self.repo.save(data)
         return ProductResponse(**entity.__dict__)
 
     async def update_product(
         self, data: ProductUpdate, image: UploadFile | None
     ) -> ProductResponse:
+        # Check if record exists
         entity = self.repo.find_by_id(data.id)
         if entity is None:
             raise BusinessError("Record Not Found")
-
-        if image is not None:
-            # Remove old image if exists
-            if entity.image and os.path.exists(entity.image):
-                os.remove(entity.image)
-
-            file_path = os.path.join(UPLOAD_DIR, str(uuid4()))
-            with open(file_path, "wb") as buffer:
-                buffer.write(await image.read())
-            data.image = f"/{file_path}"
-
+        # Remove old image if exists
+        if entity.image and os.path.exists(entity.image):
+            os.remove(entity.image)
+        # Save new image
+        file_path = os.path.join(UPLOAD_DIR, str(uuid4()))
+        with open(file_path, "wb") as buffer:
+            buffer.write(await image.read())
+        data.image = f"/{file_path}"
         entity.name = data.name
         entity.description = data.description
         entity.image = data.image
         return ProductResponse(**self.repo.update(entity).__dict__)
 
     def delete_product(self, product_id: str) -> dict:
+        # Check if record exists
         entity = self.repo.find_by_id(product_id)
         if entity is None:
             raise BusinessError("Record Not Found")
-
+        # Remove old image if exists
         if entity.image and os.path.exists(entity.image):
             os.remove(entity.image)
-
-        self.repo.delete_by_id(entity)
+        self.repo.delete(entity)
         return {"message": "Product deleted successfully"}

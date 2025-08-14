@@ -1,15 +1,23 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from websockets import route
 
+from app.core.dependency import require_roles
 from app.database.session import get_db
+from app.services.inventory_service import SellerInventoryService
 from app.services.product_service import ProductService
+from app.utils.enums import RoleEnum
 
-router = APIRouter(prefix="/secured/products", tags=["Products"])
+router = APIRouter(
+    prefix="/secured/products",
+    tags=["Products"],
+    dependencies=[Depends(require_roles(RoleEnum.BUYER))],
+)
 
 
-@router.get("/")
-def list_products(
+@router.get("/inventory")
+def list_inventory(
+    request: Request,
     page: int = 1,
     size: int = 10,
     sort_by: str = "id",
@@ -17,14 +25,9 @@ def list_products(
     search: str | None = None,
     db: Session = Depends(get_db),
 ):
-    service = ProductService(db)
-    return service.get_paginated(page, size, sort_by, order, search)
+    service = SellerInventoryService(db)
+    return service.list_all_inventory(page, size, sort_by, order, search)
 
-
-@router.get("/products/{product_id}")
-def list_inventory(product_id: str, db: Session = Depends(get_db)):
-    service = ProductService(db)
-    return service.list_all_inventory(product_id)
 
 @route.post("/landing")
 def landing_page(

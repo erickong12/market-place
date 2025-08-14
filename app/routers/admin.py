@@ -41,6 +41,19 @@ async def delete_user(user_id: str, db: Session = Depends(get_db)):
     return service.delete_user(user_id)
 
 
+@router.get("/products")
+def list_products(
+    page: int = 1,
+    size: int = 10,
+    sort_by: str = "id",
+    order: str = "asc",
+    search: str | None = None,
+    db: Session = Depends(get_db),
+):
+    service = ProductService(db)
+    return service.get_paginated(page, size, sort_by, order, search)
+
+
 @router.post("/products")
 async def add_product(
     name: str = Form(...),
