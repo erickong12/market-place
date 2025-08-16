@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
-from app.services.order import OrderService
+from app.services.order_service import OrderService
 from app.core.dependency import require_roles
 from app.utils.enums import OrderStatus, RoleEnum
 
@@ -35,7 +35,7 @@ def confirm_order(
     db: Session = Depends(get_db),
 ):
     service = OrderService(db)
-    return service.update_order_status(order_id, OrderStatus.CONFIRMED, user.id)
+    return service.update_order_status(order_id, OrderStatus.CONFIRMED, user)
 
 
 @router.patch("/{order_id}/reject")
@@ -45,7 +45,7 @@ def reject_order(
     db: Session = Depends(get_db),
 ):
     service = OrderService(db)
-    return service.update_order_status(order_id, OrderStatus.CANCELLED, user.id)
+    return service.update_order_status(order_id, OrderStatus.CANCELLED, user)
 
 
 @router.patch("/{order_id}/ready")
@@ -55,7 +55,7 @@ def ready_order(
     db: Session = Depends(get_db),
 ):
     service = OrderService(db)
-    return service.update_order_status(order_id, OrderStatus.READY, user.id)
+    return service.update_order_status(order_id, OrderStatus.READY, user)
 
 
 @router.patch("/{order_id}/done")
@@ -65,7 +65,7 @@ def complete_order(
     db: Session = Depends(get_db),
 ):
     service = OrderService(db)
-    return service.update_order_status(order_id, OrderStatus.DONE, user.id)
+    return service.update_order_status(order_id, OrderStatus.DONE, user)
 
 
 @router.patch("/{order_id}/cancel")
@@ -75,7 +75,7 @@ def cancel_order(
     db: Session = Depends(get_db),
 ):
     service = OrderService(db)
-    return service.update_order_status(order_id, OrderStatus.CANCELLED, user.id)
+    return service.update_order_status(order_id, OrderStatus.CANCELLED, user)
 
 
 @router.get("/history")

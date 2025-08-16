@@ -19,9 +19,7 @@ class Order(Base):
 
     buyer = relationship("User", foreign_keys=[buyer_id])
     seller = relationship("User", foreign_keys=[seller_id])
-    items = relationship(
-        "OrderItem", back_populates="order", cascade="all, delete-orphan"
-    )
+    items = relationship("OrderItem", back_populates="order") 
 
 
 class OrderItem(Base):

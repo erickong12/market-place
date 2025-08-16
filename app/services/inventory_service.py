@@ -3,6 +3,7 @@ from app.core.exception import BusinessError
 from app.repository.inventory_repository import SellerInventoryRepository
 from app.schemas.inventory import (
     SellerInventoryCreate,
+    SellerInventoryPageResponse,
     SellerInventoryResponse,
     SellerInventoryUpdate,
 )
@@ -22,13 +23,21 @@ class SellerInventoryService:
         search: str | None,
         seller_id: str | None,
     ) -> list[SellerInventoryResponse]:
-        entities = self.repo.get_inventory_list(
+        entities = self.repo.find_all_pagination(
             page, size, sort_by, order, search, seller_id
         )
-        return [SellerInventoryResponse(**e.__dict__) for e in entities]
+        return SellerInventoryPageResponse(
+            page=page,
+            size=size,
+            offset=(page - 1) * size,
+            total_record=entities.total,
+            result=[
+                SellerInventoryResponse(**entity.__dict__) for entity in entities.data
+            ],
+        )
 
     def get_inventory(self, inventory_id: int) -> SellerInventoryResponse:
-        entity = self.repo.get_inventory_by_id(inventory_id)
+        entity = self.repo.get_by_id(inventory_id)
         if entity is None:
             raise BusinessError("Record Not Found")
         return SellerInventoryResponse(**entity.__dict__)
@@ -40,8 +49,8 @@ class SellerInventoryService:
         entity = self.repo.create_inventory(data)
         return SellerInventoryResponse(**entity.__dict__)
 
-    def update_stock(self, data: SellerInventoryUpdate) -> SellerInventoryResponse:
-        entity = self.repo.get_inventory_by_id(data.id)
+    def update_inventory(self, data: SellerInventoryUpdate) -> SellerInventoryResponse:
+        entity = self.repo.get_by_id(data.id)
         if entity is None:
             raise BusinessError("Record Not Found")
         if data.quantity < 0:
@@ -53,5 +62,5 @@ class SellerInventoryService:
         entity = self.repo.get_by_id(inventory_id)
         if entity is None:
             raise BusinessError("Record Not Found")
-        self.repo.delete_inventory(entity)
+        self.repo.delete(entity)
         return {"message": "Inventory deleted successfully"}

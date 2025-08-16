@@ -28,3 +28,23 @@ class SellerInventoryResponse(BaseModel):
     quantity: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class SellerInventoryDetailResponse(BaseModel):
+    id: str
+    product_id: str
+    product_name: str
+    product_image: str
+    product_description: str
+    seller_id: str
+    seller_name: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SellerInventoryPageResponse(BaseModel):
+    page: int
+    size: int
+    offset: int
+    total_record: int
+    result: list[SellerInventoryDetailResponse]

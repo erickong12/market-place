@@ -10,22 +10,9 @@ class OrderRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def create_order_with_items(self, buyer_id: str, seller_id: str, items_data: list):
-        order = Order(buyer_id=buyer_id, seller_id=seller_id)
+    def create_order_with_items(self, order: Order):
         self.db.add(order)
-        self.db.flush()
-
-        for item in items_data:
-            self.db.add(
-                OrderItem(
-                    order_id=order.id,
-                    seller_inventory_id=item["seller_inventory_id"],
-                    quantity=item["quantity"],
-                    price_at_purchase=item["price_at_purchase"],
-                )
-            )
-
-        self.db.flush()
+        self.db.commit()
         return order
 
     def get_orders_by_buyer(self, buyer_id: str) -> List[Order]:
@@ -57,7 +44,6 @@ class OrderRepository:
     def update_order_status(self, order: Order, new_status: OrderStatus):
         order.status = new_status.value
         self.db.commit()
-        self.db.refresh(order)
         return order
 
     def get_top_sellers(db: Session, limit: int):

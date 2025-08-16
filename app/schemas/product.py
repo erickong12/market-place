@@ -2,8 +2,6 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
-from app.schemas.common import PageResponse
-
 
 class ProductResponse(BaseModel):
     id: str
@@ -22,14 +20,19 @@ class ProductOut(ProductResponse):
     image: Optional[str]
     model_config = ConfigDict(from_attributes=True)
 
+
 class ProductLandingPage(BaseModel):
     id: str
     name: str
     image: Optional[str]
     model_config = ConfigDict(from_attributes=True)
 
+
 class ProductPageResponse(BaseModel):
-    page: PageResponse
+    page: int
+    size: int
+    offset: int
+    total_record: int
     result: list[ProductResponse]
 
 

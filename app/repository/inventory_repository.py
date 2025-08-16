@@ -1,10 +1,11 @@
 # app/repository/inventory.py
-from typing import Optional, List
+from typing import Optional
 from sqlalchemy.orm import Session
 from app.models.inventory import SellerInventory
 from app.models.product import Product
 from app.models.user import User
 from app.repository.common import find_paginated
+from app.schemas.common import Page
 
 
 class SellerInventoryRepository:
@@ -12,7 +13,7 @@ class SellerInventoryRepository:
         self.db = db
         self.model = SellerInventory
 
-    def get_inventory_list(
+    def find_all_pagination(
         self,
         skip: int,
         limit: int,
@@ -20,7 +21,7 @@ class SellerInventoryRepository:
         order: str,
         search: str | None,
         seller_id: str | None,
-    ) -> List[SellerInventory]:
+    ) -> Page:
         query = (
             self.db.query(
                 self.model.id.label("id"),
@@ -43,10 +44,18 @@ class SellerInventoryRepository:
             query = query.filter(Product.name.icontains(search))
         return find_paginated(query, self.model, skip, limit, sort_by, order)
 
-    def get_inventory_by_id(self, inv_id: str) -> Optional[SellerInventory]:
+    def get_by_id(self, inv_id: str) -> Optional[SellerInventory]:
         return self.db.query(self.model).filter(self.model.id == inv_id).first()
 
-    def create(self, entity: SellerInventory):
+    def get_by_id_for_update(self, inv_id: str) -> Optional[SellerInventory]:
+        return (
+            self.db.query(self.model)
+            .filter(self.model.id == inv_id)
+            .with_for_update()
+            .first()
+        )
+
+    def create(self, entity: SellerInventory) -> SellerInventory:
         self.db.add(entity)
         self.db.commit()
         self.db.refresh(entity)
@@ -54,9 +63,8 @@ class SellerInventoryRepository:
 
     def update(self, entity: SellerInventory) -> SellerInventory:
         self.db.commit()
-        self.db.refresh(entity)
         return entity
 
-    def delete_inventory(self, entity: SellerInventory):
+    def delete(self, entity: SellerInventory) -> None:
         entity.delete = True
         self.db.commit()

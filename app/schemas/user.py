@@ -2,7 +2,6 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
 from app.models.user import RoleEnum
-from app.schemas.common import PageResponse
 
 
 class UserCreate(BaseModel):
@@ -13,11 +12,13 @@ class UserCreate(BaseModel):
     password: str
     role: RoleEnum
 
+
 class UserUpdateProfile(BaseModel):
     name: Optional[str]
     address: Optional[str]
     phone: Optional[str]
     username: Optional[str]
+
 
 class UserUpdate(UserCreate):
     id: str
@@ -41,7 +42,10 @@ class UserOut(BaseModel):
 
 
 class UserPageResponse(BaseModel):
-    page: PageResponse
+    page: int
+    size: int
+    offset: int
+    total_record: int
     result: list[UserResponse]
 
 

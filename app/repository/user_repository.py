@@ -35,7 +35,6 @@ class UserRepository:
 
     def update(self, entity: User) -> User:
         self.db.commit()
-        self.db.refresh(entity)
         return entity
 
     def delete(self, entity: User) -> None:
