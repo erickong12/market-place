@@ -54,8 +54,12 @@ class CartService:
     def checkout(self, user_id: str) -> dict:
         try:
             with self.db.begin():
-                order_items_to_create = [OrderItem]
                 items = self.repo.find_all(user_id)
+                if not items:
+                    raise BusinessError("Cart is empty")
+
+                items_by_seller = {}
+
                 for item in items:
                     inv = self.inventory_repo.get_by_id_for_update(
                         item.seller_inventory_id
@@ -64,10 +68,14 @@ class CartService:
                         raise BusinessError("Inventory not found")
 
                     if inv.quantity < item.quantity:
-                        raise BusinessError("stock not enough")
+                        raise BusinessError("Stock not enough")
 
                     inv.quantity -= item.quantity
-                    order_items_to_create.append(
+
+                    if inv.seller_id not in items_by_seller:
+                        items_by_seller[inv.seller_id] = []
+
+                    items_by_seller[inv.seller_id].append(
                         OrderItem(
                             seller_inventory_id=inv.id,
                             quantity=item.quantity,
@@ -75,16 +83,17 @@ class CartService:
                         )
                     )
 
-                self.order_repo.create_order_with_items(
-                    Order(
-                        buyer_id=user_id,
-                        seller_id=inv.seller_id,
-                        items=order_items_to_create,
+                for seller_id, order_items in items_by_seller.items():
+                    self.order_repo.create_order_with_items(
+                        Order(
+                            buyer_id=user_id,
+                            seller_id=seller_id,
+                            items=order_items,
+                        )
                     )
-                )
 
                 return Response(status_code=201)
 
-        except IntegrityError as e:
+        except IntegrityError:
             self.db.rollback()
             raise

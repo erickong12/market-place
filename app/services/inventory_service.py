@@ -21,7 +21,7 @@ class SellerInventoryService:
         sort_by: str,
         order: str,
         search: str | None,
-        seller_id: str | None,
+        seller_id: str | None = None,
     ) -> list[SellerInventoryResponse]:
         entities = self.repo.find_all_pagination(
             page, size, sort_by, order, search, seller_id

@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from websockets import route
 
 from app.core.dependency import require_roles
 from app.database.session import get_db
@@ -15,9 +14,8 @@ router = APIRouter(
 )
 
 
-@router.get("/inventory")
+@router.get("")
 def list_inventory(
-    request: Request,
     page: int = 1,
     size: int = 10,
     sort_by: str = "id",
@@ -29,14 +27,11 @@ def list_inventory(
     return service.list_all_inventory(page, size, sort_by, order, search)
 
 
-@route.post("/landing")
+@router.get("/landing")
 def landing_page(
-    page: int = 1,
-    size: int = 10,
-    sort_by: str = "id",
-    order: str = "asc",
+    limit: int = 5,
     search: str | None = None,
     db: Session = Depends(get_db),
 ):
     service = ProductService(db)
-    return service.get_landing_page(page, size, sort_by, order, search)
+    return service.get_landing_page(limit, search)

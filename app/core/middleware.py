@@ -1,7 +1,7 @@
 from fastapi import Request
 from jose import JWTError
 from app.database.session import get_db_session
-from app.core.exception import UNAUTHORIZED
+from app.core.exception import INVALID_CREDENTIALS
 from app.repository.user_repository import UserRepository
 from app.utils import util
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -26,26 +26,28 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
+        if request.method != "OPTIONS":
+            if path.startswith("/secured"):
+                # Token check
+                auth_header = request.headers.get("Authorization")
+                if not auth_header or not auth_header.startswith("Bearer "):
+                    raise INVALID_CREDENTIALS
 
-        if path.startswith("/secured"):
-            # Token check
-            auth_header = request.headers.get("Authorization")
-            if not auth_header or not auth_header.startswith("Bearer "):
-                raise UNAUTHORIZED
+                token = auth_header.split(" ")[1]
+                try:
+                    payload = util.verify_token(token)
+                    if not payload:
+                        raise INVALID_CREDENTIALS
+                    user_id: str = payload.get("data", {}).get("user_id")
+                    if not user_id:
+                        raise INVALID_CREDENTIALS
+                except JWTError:
+                    raise INVALID_CREDENTIALS
 
-            token = auth_header.split(" ")[1]
-            try:
-                payload = util.verify_token(token)
-                user_id: str = payload.get("data", {}).get("user_id")
-                if not user_id:
-                    raise UNAUTHORIZED
-            except JWTError:
-                raise UNAUTHORIZED
+                with get_db_session() as db:
+                    user = UserRepository(db).find_by_id(user_id)
+                if not user:
+                    raise INVALID_CREDENTIALS
 
-            with get_db_session() as db:
-                user = UserRepository(db).find_by_id(user_id)
-            if not user:
-                raise UNAUTHORIZED
-
-            request.state.user = user
+                request.state.user = user
         return await call_next(request)

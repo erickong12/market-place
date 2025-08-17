@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from app.core.exception import INVALID_CREDENTIALS
+from app.models.user import User
 from app.repository.user_repository import UserRepository
 from app.schemas.user import (
     UserCreate,
@@ -34,7 +35,15 @@ class AuthService:
         existing_user = self.repo.find_by_username(data.username)
         if existing_user:
             raise INVALID_CREDENTIALS("User already exists")
-        self.repo.save(data)
+        user = User(
+            name=data.name,
+            address=data.address,
+            phone=data.phone,
+            username=data.username,
+            password=util.hash_password(data.password),
+            role=data.role,
+        )
+        self.repo.save(user)
         return {"message": "User registered successfully"}
 
     def update_profile(self, user_id: str, data: UserUpdateProfile):
