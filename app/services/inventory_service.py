@@ -38,14 +38,14 @@ class SellerInventoryService:
             result=entities.data,
         )
 
-    def get_inventory(self, inventory_id: int) -> SellerInventoryResponse:
+    def get_inventory(self, inventory_id: str) -> SellerInventoryResponse:
         entity = self.repo.get_by_id(inventory_id)
         if entity is None:
             raise BusinessError("Record Not Found")
         return SellerInventoryResponse(**entity.__dict__)
 
     def add_inventory(
-        self, data: SellerInventoryCreate, seller_id: int
+        self, data: SellerInventoryCreate, seller_id: str
     ) -> SellerInventoryResponse:
         entity = SellerInventory(
             seller_id=seller_id,
@@ -65,7 +65,7 @@ class SellerInventoryService:
         updated_entity = self.repo.update(entity, data)
         return SellerInventoryResponse(**updated_entity.__dict__)
 
-    def delete_inventory(self, inventory_id: int, seller_id: int):
+    def delete_inventory(self, inventory_id: str):
         entity = self.repo.get_by_id(inventory_id)
         if entity is None:
             raise BusinessError("Record Not Found")

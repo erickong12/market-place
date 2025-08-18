@@ -1,8 +1,10 @@
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.core.exception import BusinessError
+from app.models.user import User
 from app.repository.user_repository import UserRepository
 from app.schemas.user import UserPageResponse, UserResponse, UserCreate
+from app.utils import util
 
 
 class UserService:
@@ -28,7 +30,15 @@ class UserService:
         entity = self.repo.find_by_username(data.username)
         if entity is not None:
             raise BusinessError("User already exists")
-        self.repo.save(data)
+        user = User(
+            name=data.name,
+            address=data.address,
+            phone=data.phone,
+            username=data.username,
+            password=util.hash_password(data.password),
+            role=data.role,
+        )
+        self.repo.save(user)
         return JSONResponse(status_code=201)
 
     def delete_user(self, user_id: str) -> dict:

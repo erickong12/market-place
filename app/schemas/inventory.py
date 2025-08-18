@@ -4,7 +4,7 @@ from app.schemas.product import ProductOut
 
 
 class SellerInventoryCreate(BaseModel):
-    product_id: int
+    product_id: str
     price: float
     quantity: int
 
@@ -22,7 +22,7 @@ class SellerInventoryOut(BaseModel):
 
 
 class SellerInventoryResponse(BaseModel):
-    id: int
+    id: str
     product: ProductOut
     price: float
     quantity: int

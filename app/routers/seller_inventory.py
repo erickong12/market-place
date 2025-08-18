@@ -43,18 +43,16 @@ def add_inventory(
 def update_inventory(
     inventory_id: str,
     payload: SellerInventoryCreate,
-    request: Request,
     db: Session = Depends(get_db),
 ):
     service = SellerInventoryService(db)
-    return service.update_inventory(inventory_id, payload, request.state.user.id)
+    return service.update_inventory(inventory_id, payload)
 
 
 @router.delete("/{inventory_id}")
 def delete_inventory(
     inventory_id: str,
-    request: Request,
     db: Session = Depends(get_db),
 ):
     service = SellerInventoryService(db)
-    return service.delete_inventory(inventory_id, request.state.user.id)
+    return service.delete_inventory(inventory_id)

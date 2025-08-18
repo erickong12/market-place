@@ -2,14 +2,14 @@ from pydantic import BaseModel, ConfigDict
 
 
 class CartItemCreate(BaseModel):
-    seller_inventory_id: int
+    seller_inventory_id: str
     quantity: int
 
 
 class CartItemResponse(BaseModel):
-    id: int
+    id: str
     quantity: int
-    inventory_id: int
+    inventory_id: str
     price: float
     product_id: str
     product_name: str
