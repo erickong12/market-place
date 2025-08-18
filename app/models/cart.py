@@ -12,5 +12,5 @@ class CartItem(Base):
     seller_inventory_id = Column(String, ForeignKey("seller_inventory.id"))
     quantity = Column(Integer, nullable=False)
 
-    buyer = relationship("User")
-    seller_inventory = relationship("SellerInventory")
+    buyer = relationship("User", back_populates="cart_items")
+    seller_inventory = relationship("SellerInventory", back_populates="cart_items")

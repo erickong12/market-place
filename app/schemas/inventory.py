@@ -45,6 +45,6 @@ class SellerInventoryDetailResponse(BaseModel):
 class SellerInventoryPageResponse(BaseModel):
     page: int
     size: int
-    offset: int
+    skip: int
     total_record: int
     result: list[SellerInventoryDetailResponse]

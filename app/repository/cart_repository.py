@@ -1,6 +1,11 @@
 from app.models.cart import CartItem
 from sqlalchemy.orm import Session
 
+from app.models.inventory import SellerInventory
+
+from app.models.product import Product
+from app.models.user import User
+
 
 class CartRepository:
     def __init__(self, db: Session):
@@ -8,7 +13,24 @@ class CartRepository:
         self.model = CartItem
 
     def find_all(self, buyer_id: str):
-        return self.db.query(self.model).filter(self.model.buyer_id == buyer_id).all()
+        return (
+            self.db.query(
+                CartItem.id,
+                CartItem.quantity,
+                SellerInventory.id.label("inventory_id"),
+                SellerInventory.price,
+                Product.id.label("product_id"),
+                Product.name.label("product_name"),
+                Product.image,
+                User.id.label("seller_id"),
+                User.name.label("seller_name"),
+            )
+            .join(CartItem.seller_inventory)
+            .join(SellerInventory.product)
+            .join(SellerInventory.seller)
+            .filter(self.model.buyer_id == buyer_id)
+            .all()
+        )
 
     def get_by_id(self, cart_id):
         return self.db.query(self.model).filter_by(id=cart_id).first()

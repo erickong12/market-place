@@ -31,7 +31,7 @@ class ProductLandingPage(BaseModel):
 class ProductPageResponse(BaseModel):
     page: int
     size: int
-    offset: int
+    skip: int
     total_record: int
     result: list[ProductResponse]
 

@@ -13,6 +13,7 @@ class SellerInventory(Base):
     price = Column(Float, nullable=False)
     quantity = Column(Integer, nullable=False)
     delete = Column(Boolean, default=False)
-
-    seller = relationship("User")
-    product = relationship("Product")
+    
+    seller = relationship("User", back_populates="inventories")
+    product = relationship("Product", back_populates="inventory")
+    cart_items = relationship("CartItem", back_populates="seller_inventory")

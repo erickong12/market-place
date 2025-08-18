@@ -35,16 +35,10 @@ class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserOut(BaseModel):
-    id: str
-    name: str
-    model_config = ConfigDict(from_attributes=True)
-
-
 class UserPageResponse(BaseModel):
     page: int
     size: int
-    offset: int
+    skip: int
     total_record: int
     result: list[UserResponse]
 

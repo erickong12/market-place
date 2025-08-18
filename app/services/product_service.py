@@ -14,7 +14,6 @@ from app.schemas.product import (
     ProductResponse,
     ProductUpdate,
 )
-from app.schemas.common import PageResponse
 
 
 class ProductService:
@@ -29,17 +28,16 @@ class ProductService:
         limit = size
         result = self.repo.find_all_paginated(skip, limit, sort_by, order, search)
         return ProductPageResponse(
-            page=PageResponse(
-                page=page, size=size, offset=skip, total_record=result[1]
-            ),
+            page=page,
+            size=size,
+            skip=skip,
+            total_record=result.total,
             result=result.data,
         )
 
     def list_products_dropdown(self) -> list[ProductOut]:
         result = self.repo.find_all()
-        return [ProductOut](
-            [ProductOut(**item.__dict__) for item in result]
-        )
+        return [ProductOut]([ProductOut(**item.__dict__) for item in result])
 
     def get_landing_page(self, limit: int) -> list[ProductLandingPage]:
         result = self.repo.find_top_products(limit)
@@ -48,7 +46,6 @@ class ProductService:
         )
 
     def get_product_by_id(self, product_id: str) -> ProductResponse:
-        # Check if record exists
         entity = self.repo.find_by_id(product_id)
         if entity is None:
             raise BusinessError("Record Not Found")
@@ -86,7 +83,6 @@ class ProductService:
         return ProductResponse(**self.repo.update(entity).__dict__)
 
     def delete_product(self, product_id: str) -> dict:
-        # Check if record exists
         entity = self.repo.find_by_id(product_id)
         if entity is None:
             raise BusinessError("Record Not Found")

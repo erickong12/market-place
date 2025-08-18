@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 from sqlalchemy import Column, Enum, String, Boolean
+from sqlalchemy.orm import relationship
 
 from app.database.base import Base
 from app.utils.enums import RoleEnum
@@ -16,3 +17,6 @@ class User(Base):
     password = Column(String)
     role = Column(Enum(RoleEnum), default=RoleEnum.BUYER)
     delete = Column(Boolean, default=False)
+
+    inventories = relationship("SellerInventory", back_populates="seller")
+    cart_items = relationship("CartItem", back_populates="buyer")

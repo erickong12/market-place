@@ -12,13 +12,13 @@ class UserRepository:
     def find_all_paginated(
         self, skip: int, limit: int, sort_by: str, order: str, search: Optional[str]
     ):
-        query = self.db.query(self.model)
+        query = self.db.query(self.model).filter(self.model.delete == False)
 
         if search:
             query = query.filter(
                 self.model.username.icontains(search)
                 | self.model.name.icontains(search)
-            ).filter(self.model.delete == False)
+            )
         return find_paginated(query, self.model, skip, limit, sort_by, order)
 
     def find_by_id(self, user_id: str) -> Optional[User]:

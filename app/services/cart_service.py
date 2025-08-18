@@ -1,7 +1,5 @@
-from typing import List
 from fastapi import Response
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
 
 from app.core.exception import BusinessError
 from app.models.cart import CartItem
@@ -9,8 +7,7 @@ from app.models.order import Order, OrderItem
 from app.repository.cart_repository import CartRepository
 from app.repository.inventory_repository import SellerInventoryRepository
 from app.repository.order_repository import OrderRepository
-from app.schemas.cart import CartItemCreate
-from app.schemas.order import OrderItemCreate
+from app.schemas.cart import CartItemCreate, CartItemResponse
 
 
 class CartService:
@@ -20,9 +17,9 @@ class CartService:
         self.inventory_repo = SellerInventoryRepository(db)
         self.order_repo = OrderRepository(db)
 
-    def list_cart(self, user_id: str) -> List[OrderItemCreate]:
+    def list_cart(self, user_id: str) -> list[CartItemResponse]:
         items = self.repo.find_all(user_id)
-        return items
+        return [CartItemResponse(**item.__dict__) for item in items]
 
     def add_to_cart(self, user_id: str, item: CartItemCreate) -> Response:
         cart = CartItem(
@@ -94,6 +91,6 @@ class CartService:
 
                 return Response(status_code=201)
 
-        except IntegrityError:
+        except Exception:
             self.db.rollback()
             raise

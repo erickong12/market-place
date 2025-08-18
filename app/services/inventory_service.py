@@ -23,13 +23,15 @@ class SellerInventoryService:
         search: str | None,
         seller_id: str | None = None,
     ) -> list[SellerInventoryResponse]:
+        skip = (page - 1) * size
+        limit = size
         entities = self.repo.find_all_pagination(
-            page, size, sort_by, order, search, seller_id
+            skip, limit, sort_by, order, search, seller_id
         )
         return SellerInventoryPageResponse(
             page=page,
             size=size,
-            offset=(page - 1) * size,
+            skip=skip,
             total_record=entities.total,
             result=[
                 SellerInventoryResponse(**entity.__dict__) for entity in entities.data

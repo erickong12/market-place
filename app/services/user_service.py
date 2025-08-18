@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 from app.core.exception import BusinessError
 from app.repository.user_repository import UserRepository
-from app.schemas.common import PageResponse
 from app.schemas.user import UserPageResponse, UserResponse, UserCreate
 
 
@@ -17,9 +16,10 @@ class UserService:
         limit = size
         result = self.repo.find_all_paginated(skip, limit, sort_by, order, search)
         return UserPageResponse(
-            page=PageResponse(
-                page=page, size=size, offset=skip, total_record=result.total
-            ),
+            page=page,
+            size=size,
+            skip=skip,
+            total_record=result.total,
             result=result.data,
         )
 

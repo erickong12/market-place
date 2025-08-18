@@ -21,11 +21,9 @@ class ProductRepository:
     def find_all_paginated(
         self, skip: int, limit: int, sort_by: str, order: str, search: Optional[str]
     ) -> Page:
-        query = self.db.query(self.model)
+        query = self.db.query(self.model).filter(self.model.delete == False)
         if search:
-            query = query.filter(self.model.name.icontains(search)).filter(
-                self.model.delete == False
-            )
+            query = query.filter(self.model.name.icontains(search))
         return find_paginated(query, self.model, skip, limit, sort_by, order)
 
     def find_by_id(self, product_id: str) -> Optional[Product]:
@@ -49,7 +47,7 @@ class ProductRepository:
             .join(Order, Order.id == OrderItem.order_id)
             .filter(Order.status == OrderStatus.DONE)
             .filter(self.model.delete == False)
-            .group_by(self.model.id, self.model.name)
+            .group_by(self.model.id, self.model.name, self.model.image)
             .order_by(desc("total_sold"))
             .limit(limit)
             .all()

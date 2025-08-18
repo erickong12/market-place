@@ -24,23 +24,24 @@ class SellerInventoryRepository:
     ) -> Page:
         query = (
             self.db.query(
-                self.model.id.label("id"),
-                self.model.product_id.label("product_id"),
-                self.model.quantity.label("quantity"),
-                self.model.price.label("price"),
+                self.model.id,
+                self.model.quantity,
+                self.model.price,
+                Product.id.label("product_id"),
                 Product.name.label("product_name"),
                 Product.image.label("product_image"),
                 Product.description.label("product_description"),
                 User.id.label("seller_id"),
                 User.name.label("seller_name"),
             )
-            .join(Product, Product.id == self.model.product_id)
-            .join(User, User.id == self.model.seller_id)
+            .join(Product.inventory)
+            .join(SellerInventory.seller)
+            .filter(self.model.delete == False)
         )
 
-        if seller_id is not None:
+        if seller_id:
             query = query.filter(self.model.seller_id == seller_id)
-        if search is not None:
+        if search:
             query = query.filter(Product.name.icontains(search))
         return find_paginated(query, self.model, skip, limit, sort_by, order)
 

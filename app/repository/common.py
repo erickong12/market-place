@@ -1,3 +1,4 @@
+from sqlalchemy import asc, desc, text
 from sqlalchemy.orm import Query
 
 from app.schemas.common import Page
@@ -19,8 +20,8 @@ def find_paginated(
         Page: A Page object containing the paginated results and total count.
     """
     if order == "asc":
-        query = query.order_by(getattr(model, sort_by).asc())
+        query = query.order_by(asc(text(sort_by)))
     else:
-        query = query.order_by(getattr(model, sort_by).desc())
+        query = query.order_by(desc(text(sort_by)))
     query = query.offset(skip).limit(limit)
     return Page(data=query.all(), total=query.count())
