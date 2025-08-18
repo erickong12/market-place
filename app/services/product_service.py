@@ -1,6 +1,6 @@
 import os
 from uuid import uuid4
-from fastapi import UploadFile
+from fastapi import Response, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.config import UPLOAD_DIR
@@ -9,7 +9,6 @@ from app.repository.product_repository import ProductRepository
 from app.schemas.product import (
     ProductCreate,
     ProductLandingPage,
-    ProductOut,
     ProductPageResponse,
     ProductResponse,
     ProductUpdate,
@@ -35,15 +34,9 @@ class ProductService:
             result=result.data,
         )
 
-    def list_products_dropdown(self) -> list[ProductOut]:
-        result = self.repo.find_all()
-        return [ProductOut]([ProductOut(**item.__dict__) for item in result])
-
     def get_landing_page(self, limit: int) -> list[ProductLandingPage]:
         result = self.repo.find_top_products(limit)
-        return [ProductLandingPage](
-            [ProductLandingPage(**item.__dict__) for item in result]
-        )
+        return [ProductLandingPage(**item.__dict__) for item in result]
 
     def get_product_by_id(self, product_id: str) -> ProductResponse:
         entity = self.repo.find_by_id(product_id)
@@ -90,4 +83,4 @@ class ProductService:
         if entity.image and os.path.exists(entity.image):
             os.remove(entity.image)
         self.repo.delete(entity)
-        return {"message": "Product deleted successfully"}
+        return Response(status_code=204)

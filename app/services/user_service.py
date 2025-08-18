@@ -1,3 +1,4 @@
+from fastapi import Response
 from sqlalchemy.orm import Session
 from app.core.exception import BusinessError
 from app.repository.user_repository import UserRepository
@@ -35,4 +36,4 @@ class UserService:
         if entity is None:
             raise BusinessError("Record Not Found")
         self.repo.delete(entity)
-        return {"message": "User deleted successfully"}
+        return Response(status_code=204)

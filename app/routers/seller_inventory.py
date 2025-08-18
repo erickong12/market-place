@@ -30,13 +30,6 @@ def list_inventory(
         page, size, sort_by, order, search, request.state.user.id
     )
 
-
-@router.get("/product/dropdown")
-def list_products_dropdown(db: Session = Depends(get_db)):
-    service = ProductService(db)
-    return service.list_products_dropdown()
-
-
 @router.post("/")
 def add_inventory(
     payload: SellerInventoryCreate,

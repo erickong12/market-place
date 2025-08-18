@@ -1,3 +1,4 @@
+from fastapi import Response
 from sqlalchemy.orm import Session
 from app.core.exception import BusinessError
 from app.repository.inventory_repository import SellerInventoryRepository
@@ -33,9 +34,7 @@ class SellerInventoryService:
             size=size,
             skip=skip,
             total_record=entities.total,
-            result=[
-                SellerInventoryResponse(**entity.__dict__) for entity in entities.data
-            ],
+            result= entities.data,
         )
 
     def get_inventory(self, inventory_id: int) -> SellerInventoryResponse:
@@ -65,4 +64,4 @@ class SellerInventoryService:
         if entity is None:
             raise BusinessError("Record Not Found")
         self.repo.delete(entity)
-        return {"message": "Inventory deleted successfully"}
+        return Response(status_code=204)
