@@ -4,13 +4,13 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from requests import Session
 
 from app.database.session import get_db
-from app.schemas.user import UserCreate, UserUpdate
+from app.schemas.user import UserCreate, UserLoginResponse, UserResponse, UserUpdate
 from app.services.auth_service import AuthService
 
 router = APIRouter(tags=["Authentication"])
 
 
-@router.post("/login")
+@router.post("/login", response_model=UserLoginResponse)
 def login(
     credentials: Annotated[HTTPBasicCredentials, Depends(HTTPBasic())],
     db: Session = Depends(get_db),
@@ -25,13 +25,13 @@ def register_seller(data: UserCreate, db: Session = Depends(get_db)):
     return service.register_user(data)
 
 
-@router.get("/secured/profile")
+@router.get("/secured/profile", response_model=UserResponse)
 def get_profile(request: Request, db: Session = Depends(get_db)):
     service = AuthService(db)
     return service.get_profile(request.state.user.id)
 
 
-@router.patch("/secured/profile")
+@router.patch("/secured/profile", response_model=UserResponse)
 def update_profile(data: UserUpdate, request: Request, db: Session = Depends(get_db)):
     service = AuthService(db)
     return service.update_profile(request.state.user.id, data)

@@ -1,4 +1,4 @@
-from fastapi import Response
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.core.exception import INVALID_CREDENTIALS
 from app.models.user import User
@@ -45,7 +45,7 @@ class AuthService:
             role=data.role,
         )
         self.repo.save(user)
-        return Response(status_code=201)
+        return JSONResponse(status_code=201)
 
     def update_profile(self, user_id: str, data: UserUpdateProfile):
         user = self.repo.find_by_id(user_id)
@@ -64,4 +64,4 @@ class AuthService:
             raise INVALID_CREDENTIALS
         user.password = util.hash_password(new_password)
         self.repo.update(user)
-        return Response(status_code=200)
+        return JSONResponse(status_code=200)

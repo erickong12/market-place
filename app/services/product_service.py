@@ -1,6 +1,7 @@
 import os
 from uuid import uuid4
-from fastapi import Response, UploadFile
+from fastapi import UploadFile
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.core.config import UPLOAD_DIR
@@ -46,14 +47,14 @@ class ProductService:
 
     async def insert_product(
         self, data: ProductCreate, image: UploadFile | None
-    ) -> ProductResponse:
+    ):
         # Save image
         file_path = os.path.join(UPLOAD_DIR, str(uuid4()))
         with open(file_path, "wb") as buffer:
             buffer.write(await image.read())
         data.image = f"/{file_path}"
-        entity = self.repo.save(data)
-        return ProductResponse(**entity.__dict__)
+        self.repo.save(data)
+        return JSONResponse(status_code=201)
 
     async def update_product(
         self, data: ProductUpdate, image: UploadFile | None
@@ -75,7 +76,7 @@ class ProductService:
         entity.image = data.image
         return ProductResponse(**self.repo.update(entity).__dict__)
 
-    def delete_product(self, product_id: str) -> dict:
+    def delete_product(self, product_id: str):
         entity = self.repo.find_by_id(product_id)
         if entity is None:
             raise BusinessError("Record Not Found")
@@ -83,4 +84,4 @@ class ProductService:
         if entity.image and os.path.exists(entity.image):
             os.remove(entity.image)
         self.repo.delete(entity)
-        return Response(status_code=204)
+        return JSONResponse(status_code=204)

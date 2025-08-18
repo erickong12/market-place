@@ -3,9 +3,8 @@ from sqlalchemy.orm import Session
 
 from app.core.dependency import require_roles
 from app.database.session import get_db
-from app.schemas.inventory import SellerInventoryCreate
+from app.schemas.inventory import SellerInventoryCreate, SellerInventoryPageResponse, SellerInventoryResponse
 from app.services.inventory_service import SellerInventoryService
-from app.services.product_service import ProductService
 from app.utils.enums import RoleEnum
 
 router = APIRouter(
@@ -15,7 +14,7 @@ router = APIRouter(
 )
 
 
-@router.get("/")
+@router.get("/", response_model=SellerInventoryPageResponse)
 def list_inventory(
     request: Request,
     page: int = 1,
@@ -30,17 +29,17 @@ def list_inventory(
         page, size, sort_by, order, search, request.state.user.id
     )
 
-@router.post("/")
+@router.post("/", response_model=SellerInventoryResponse)
 def add_inventory(
     payload: SellerInventoryCreate,
     request: Request,
     db: Session = Depends(get_db),
 ):
     service = SellerInventoryService(db)
-    return service.add_inventory_with_seller(payload, request.state.user.id)
+    return service.add_inventory(payload, request.state.user.id)
 
 
-@router.put("/{inventory_id}")
+@router.put("/{inventory_id}", response_model=SellerInventoryResponse)
 def update_inventory(
     inventory_id: str,
     payload: SellerInventoryCreate,

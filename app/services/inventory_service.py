@@ -1,6 +1,7 @@
-from fastapi import Response
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.core.exception import BusinessError
+from app.models.inventory import SellerInventory
 from app.repository.inventory_repository import SellerInventoryRepository
 from app.schemas.inventory import (
     SellerInventoryCreate,
@@ -23,7 +24,7 @@ class SellerInventoryService:
         order: str,
         search: str | None,
         seller_id: str | None = None,
-    ) -> list[SellerInventoryResponse]:
+    ) -> SellerInventoryPageResponse:
         skip = (page - 1) * size
         limit = size
         entities = self.repo.find_all_pagination(
@@ -34,7 +35,7 @@ class SellerInventoryService:
             size=size,
             skip=skip,
             total_record=entities.total,
-            result= entities.data,
+            result=entities.data,
         )
 
     def get_inventory(self, inventory_id: int) -> SellerInventoryResponse:
@@ -43,11 +44,16 @@ class SellerInventoryService:
             raise BusinessError("Record Not Found")
         return SellerInventoryResponse(**entity.__dict__)
 
-    def add_inventory_with_seller(
+    def add_inventory(
         self, data: SellerInventoryCreate, seller_id: int
     ) -> SellerInventoryResponse:
-        data.seller_id = seller_id
-        entity = self.repo.create_inventory(data)
+        entity = SellerInventory(
+            seller_id=seller_id,
+            product_id=data.product_id,
+            quantity=data.quantity,
+            price=data.price,
+        )
+        entity = self.repo.create(entity)
         return SellerInventoryResponse(**entity.__dict__)
 
     def update_inventory(self, data: SellerInventoryUpdate) -> SellerInventoryResponse:
@@ -59,9 +65,9 @@ class SellerInventoryService:
         updated_entity = self.repo.update(entity, data)
         return SellerInventoryResponse(**updated_entity.__dict__)
 
-    def delete_inventory(self, inventory_id: int, seller_id: int) -> dict:
+    def delete_inventory(self, inventory_id: int, seller_id: int):
         entity = self.repo.get_by_id(inventory_id)
         if entity is None:
             raise BusinessError("Record Not Found")
         self.repo.delete(entity)
-        return Response(status_code=204)
+        return JSONResponse(status_code=204)

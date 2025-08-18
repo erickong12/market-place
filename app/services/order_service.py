@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
 from app.core.exception import BusinessError
-from app.models.order import Order
 from app.models.user import User
 from app.repository.inventory_repository import SellerInventoryRepository
 from app.repository.order_item_repository import OrderItemRepository
@@ -38,6 +37,18 @@ class OrderService:
             page=page,
             size=size,
             skip=skip,
+            total_record=result.total,
+            result=result.data,
+        )
+    def get_order_history(self, user: User):
+        if user.role == RoleEnum.SELLER:
+            result = self.repo.find_orders_by_seller(0, 100, "created_at", "desc", user.id)
+        elif user.role == RoleEnum.BUYER:
+            result = self.repo.find_orders_by_buyer(0, 100, "created_at", "desc", user.id)
+        return OrderPageResponse(
+            page=1,
+            size=100,
+            skip=0,
             total_record=result.total,
             result=result.data,
         )

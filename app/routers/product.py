@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 
 from app.core.dependency import require_roles
 from app.database.session import get_db
+from app.schemas.inventory import SellerInventoryPageResponse
+from app.schemas.product import ProductLandingPage
 from app.services.inventory_service import SellerInventoryService
 from app.services.product_service import ProductService
 from app.utils.enums import RoleEnum
@@ -14,7 +16,7 @@ router = APIRouter(
 )
 
 
-@router.get("")
+@router.get("", response_model=SellerInventoryPageResponse)
 def list_inventory(
     page: int = 1,
     size: int = 10,
@@ -27,7 +29,7 @@ def list_inventory(
     return service.list_all_inventory(page, size, sort_by, order, search)
 
 
-@router.get("/landing")
+@router.get("/landing", response_model=list[ProductLandingPage])
 def landing_page(
     limit: int = 5,
     search: str | None = None,

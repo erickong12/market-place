@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.core.dependency import require_roles
-from app.schemas.product import ProductCreate, ProductUpdate
-from app.schemas.user import UserCreate
+from app.schemas.product import ProductCreate, ProductPageResponse, ProductResponse, ProductUpdate
+from app.schemas.user import UserCreate, UserPageResponse
 from app.services.product_service import ProductService
 from app.services.user_service import UserService
 from app.utils.enums import RoleEnum
@@ -16,7 +16,7 @@ router = APIRouter(
 )
 
 
-@router.get("/")
+@router.get("/", response_model=UserPageResponse)
 async def list_users(
     page: int = 1,
     size: int = 10,
@@ -41,7 +41,7 @@ async def delete_user(user_id: str, db: Session = Depends(get_db)):
     return service.delete_user(user_id)
 
 
-@router.get("/products")
+@router.get("/products", response_model=ProductPageResponse)
 def list_products(
     page: int = 1,
     size: int = 10,
@@ -67,7 +67,7 @@ async def add_product(
     return await service.insert_product(data, image)
 
 
-@router.put("/products/{product_id}")
+@router.put("/products/{product_id}", response_model=ProductResponse)
 async def update_product(
     product_id: str,
     name: str = Form(...),

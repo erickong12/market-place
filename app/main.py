@@ -1,10 +1,10 @@
 import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from app.core.middleware import AuthMiddleware
 from app.database.base import Base
 from app.database.session import engine
 from app.core.exception import http_exception_handler
-from app.core.middleware import AuthMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import admin, auth, cart, order, product, seller_inventory
 

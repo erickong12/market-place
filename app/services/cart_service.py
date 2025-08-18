@@ -1,4 +1,4 @@
-from fastapi import Response
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.core.exception import BusinessError
@@ -21,18 +21,18 @@ class CartService:
         items = self.repo.find_all(user_id)
         return [CartItemResponse(**item.__dict__) for item in items]
 
-    def add_to_cart(self, user_id: str, item: CartItemCreate) -> Response:
+    def add_to_cart(self, user_id: str, item: CartItemCreate) -> JSONResponse:
         cart = CartItem(
             buyer_id=user_id,
             seller_inventory_id=item.seller_inventory_id,
             quantity=item.quantity,
         )
         self.repo.create_cart(cart)
-        return Response(status_code=201)
+        return JSONResponse(status_code=201)
 
     def update_cart_item(
         self, cart_item_id: str, quantity: int, user_id: str
-    ) -> Response:
+    ) -> JSONResponse:
         cart_item = self.repo.get_by_id(cart_item_id)
         if not cart_item:
             raise BusinessError("Cart item not found")
@@ -46,9 +46,24 @@ class CartService:
             cart_item.quantity = quantity
             self.repo.update_cart(cart_item)
 
-        return Response(status_code=204)
+        return JSONResponse(status_code=204)
+    
+    def clear_cart(self, user_id: str) -> JSONResponse:
+        self.repo.clear_cart(user_id)
+        return JSONResponse(status_code=204)
+    
+    def delete_cart_item(self, cart_item_id: str, user_id: str) -> JSONResponse:
+        cart_item = self.repo.get_by_id(cart_item_id)
+        if not cart_item:
+            raise BusinessError("Cart item not found")
 
-    def checkout(self, user_id: str) -> dict:
+        if cart_item.buyer_id != user_id:
+            raise BusinessError("Unauthorized to delete this cart item")
+
+        self.repo.delete_cart_item(cart_item)
+        return JSONResponse(status_code=204)
+
+    def checkout(self, user_id: str):
         try:
             with self.db.begin():
                 items = self.repo.find_all(user_id)
@@ -89,7 +104,7 @@ class CartService:
                         )
                     )
 
-                return Response(status_code=201)
+                return JSONResponse(status_code=201)
 
         except Exception:
             self.db.rollback()
