@@ -1,11 +1,10 @@
 import os
-from uuid import uuid4
 from fastapi import UploadFile
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from app.core.config import UPLOAD_DIR
 from app.core.exception import BusinessError
+from app.models.product import Product
 from app.repository.product_repository import ProductRepository
 from app.schemas.product import (
     ProductCreate,
@@ -14,6 +13,7 @@ from app.schemas.product import (
     ProductResponse,
     ProductUpdate,
 )
+from app.utils import util
 
 
 class ProductService:
@@ -45,35 +45,28 @@ class ProductService:
             raise BusinessError("Record Not Found")
         return ProductResponse(**entity.__dict__)
 
-    async def insert_product(
-        self, data: ProductCreate, image: UploadFile | None
-    ):
-        # Save image
-        file_path = os.path.join(UPLOAD_DIR, str(uuid4()))
-        with open(file_path, "wb") as buffer:
-            buffer.write(await image.read())
-        data.image = f"/{file_path}"
-        self.repo.save(data)
-        return JSONResponse(status_code=201)
+    async def insert_product(self, data: ProductCreate, image: UploadFile):
+        image_url = await util.save_upload_file(image)
+        product = Product(
+            name=data.name,
+            description=data.description,
+            image=image_url
+        )
+        self.repo.save(product)
+        return JSONResponse(status_code=201, content={"detail": "Product created"})
 
-    async def update_product(
-        self, data: ProductUpdate, image: UploadFile | None
-    ) -> ProductResponse:
-        # Check if record exists
+
+    async def update_product(self, data: ProductUpdate, image: UploadFile | None):
         entity = self.repo.find_by_id(data.id)
         if entity is None:
             raise BusinessError("Record Not Found")
-        # Remove old image if exists
-        if entity.image and os.path.exists(entity.image):
-            os.remove(entity.image)
-        # Save new image
-        file_path = os.path.join(UPLOAD_DIR, str(uuid4()))
-        with open(file_path, "wb") as buffer:
-            buffer.write(await image.read())
-        data.image = f"/{file_path}"
+
+        if image:
+            util.delete_file(entity.image)
+            entity.image = await util.save_upload_file(image)
+
         entity.name = data.name
         entity.description = data.description
-        entity.image = data.image
         return ProductResponse(**self.repo.update(entity).__dict__)
 
     def delete_product(self, product_id: str):
@@ -84,4 +77,4 @@ class ProductService:
         if entity.image and os.path.exists(entity.image):
             os.remove(entity.image)
         self.repo.delete(entity)
-        return JSONResponse(status_code=204)
+        return JSONResponse(status_code=200, content={"detail": "Product deleted"})

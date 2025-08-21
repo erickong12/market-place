@@ -39,11 +39,11 @@ class UserService:
             role=data.role,
         )
         self.repo.save(user)
-        return JSONResponse(status_code=201)
+        return JSONResponse(status_code=201, content={"detail": "User created"})
 
     def delete_user(self, user_id: str) -> dict:
         entity = self.repo.find_by_id(user_id)
         if entity is None:
             raise BusinessError("Record Not Found")
         self.repo.delete(entity)
-        return JSONResponse(status_code=204)
+        return JSONResponse(status_code=201, content={"detail": "User deleted"})

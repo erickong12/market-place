@@ -45,7 +45,7 @@ class AuthService:
             role=data.role,
         )
         self.repo.save(user)
-        return JSONResponse(status_code=201)
+        return JSONResponse(status_code=200, content={"detail": "User created"})
 
     def update_profile(self, user_id: str, data: UserUpdateProfile):
         user = self.repo.find_by_id(user_id)
@@ -64,4 +64,4 @@ class AuthService:
             raise INVALID_CREDENTIALS
         user.password = util.hash_password(new_password)
         self.repo.update(user)
-        return JSONResponse(status_code=200)
+        return JSONResponse(status_code=200, content={"detail": "Password changed"})

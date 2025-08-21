@@ -70,4 +70,4 @@ class SellerInventoryService:
         if entity is None:
             raise BusinessError("Record Not Found")
         self.repo.delete(entity)
-        return JSONResponse(status_code=204)
+        return JSONResponse(status_code=200, content={"detail": "Inventory deleted"})

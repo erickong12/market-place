@@ -6,6 +6,13 @@ from passlib.context import CryptContext
 from app.core import config
 from app.utils.enums import OrderStatus
 
+import os
+import uuid
+from fastapi import UploadFile
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+UPLOAD_DIR = os.path.join(BASE_DIR, "static", "products")
+URL_PREFIX = "/static/products"
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -53,3 +60,28 @@ def valid_status_transition(current: str, new: str) -> bool:
         OrderStatus.AUTO_CANCELLED.value: [],
     }
     return new in transitions.get(current, [])
+
+
+async def save_upload_file(image: UploadFile | None) -> str | None:
+    if not image:
+        return None
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    ext = os.path.splitext(image.filename)[1]
+    filename = f"{uuid.uuid4()}{ext}"
+
+    file_path = os.path.join(UPLOAD_DIR, filename)
+
+    with open(file_path, "wb") as buffer:
+        buffer.write(await image.read())
+
+    return f"{URL_PREFIX}/{filename}"
+
+
+def delete_file(url_path: str | None) -> None:
+    if not url_path:
+        return
+
+    if url_path.startswith(URL_PREFIX):
+        local_path = url_path.replace(URL_PREFIX, UPLOAD_DIR)
+        if os.path.exists(local_path):
+            os.remove(local_path)

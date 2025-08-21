@@ -4,7 +4,13 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from requests import Session
 
 from app.database.session import get_db
-from app.schemas.user import UserCreate, UserLoginResponse, UserResponse, UserUpdate
+from app.schemas.user import (
+    UserCreate,
+    UserLoginResponse,
+    UserResponse,
+    UserUpdate,
+    UserUpdatePassword,
+)
 from app.services.auth_service import AuthService
 
 router = APIRouter(tags=["Authentication"])
@@ -39,10 +45,9 @@ def update_profile(data: UserUpdate, request: Request, db: Session = Depends(get
 
 @router.patch("/secured/change-password")
 def change_password(
-    old_password: str,
-    new_password: str,
-    request: Request,
-    db: Session = Depends(get_db),
+    body: UserUpdatePassword, request: Request, db: Session = Depends(get_db)
 ):
     service = AuthService(db)
-    return service.change_password(request.state.user.id, old_password, new_password)
+    return service.change_password(
+        request.state.user.id, body.old_password, body.new_password
+    )

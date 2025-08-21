@@ -3,7 +3,12 @@ from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.core.dependency import require_roles
-from app.schemas.product import ProductCreate, ProductPageResponse, ProductResponse, ProductUpdate
+from app.schemas.product import (
+    ProductCreate,
+    ProductPageResponse,
+    ProductResponse,
+    ProductUpdate,
+)
 from app.schemas.user import UserCreate, UserPageResponse
 from app.services.product_service import ProductService
 from app.services.user_service import UserService
@@ -58,12 +63,11 @@ def list_products(
 async def add_product(
     name: str = Form(...),
     description: str = Form(""),
-    price: float = Form(...),
     image: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
     service = ProductService(db)
-    data = ProductCreate(name=name, description=description, price=price)
+    data = ProductCreate(name=name, description=description)
     return await service.insert_product(data, image)
 
 
@@ -72,12 +76,11 @@ async def update_product(
     product_id: str,
     name: str = Form(...),
     description: str = Form(""),
-    price: float = Form(...),
     image: UploadFile = File(None),
     db: Session = Depends(get_db),
 ):
     service = ProductService(db)
-    data = ProductUpdate(id=product_id, name=name, description=description, price=price)
+    data = ProductUpdate(id=product_id, name=name, description=description)
     return await service.update_product(data, image)
 
 

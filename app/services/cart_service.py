@@ -28,7 +28,7 @@ class CartService:
             quantity=item.quantity,
         )
         self.repo.create_cart(cart)
-        return JSONResponse(status_code=201)
+        return JSONResponse(status_code=201, content={"detail": "Item added to cart"})
 
     def update_cart_item(
         self, cart_item_id: str, quantity: int, user_id: str
@@ -46,11 +46,11 @@ class CartService:
             cart_item.quantity = quantity
             self.repo.update_cart(cart_item)
 
-        return JSONResponse(status_code=204)
+        return JSONResponse(status_code=200, content={"detail": "Cart item updated"})
     
     def clear_cart(self, user_id: str) -> JSONResponse:
         self.repo.clear_cart(user_id)
-        return JSONResponse(status_code=204)
+        return JSONResponse(status_code=200, content={"detail": "Cart cleared"})
     
     def delete_cart_item(self, cart_item_id: str, user_id: str) -> JSONResponse:
         cart_item = self.repo.get_by_id(cart_item_id)
@@ -61,7 +61,7 @@ class CartService:
             raise BusinessError("Unauthorized to delete this cart item")
 
         self.repo.delete_cart_item(cart_item)
-        return JSONResponse(status_code=204)
+        return JSONResponse(status_code=200, content={"detail": "Cart item deleted"})
 
     def checkout(self, user_id: str):
         try:
@@ -104,7 +104,7 @@ class CartService:
                         )
                     )
 
-                return JSONResponse(status_code=201)
+                return JSONResponse(status_code=201, content={"detail": "Order created"})
 
         except Exception:
             self.db.rollback()

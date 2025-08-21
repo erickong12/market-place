@@ -1,4 +1,3 @@
-from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
 from app.models.user import RoleEnum
@@ -6,7 +5,7 @@ from app.models.user import RoleEnum
 
 class UserCreate(BaseModel):
     name: str
-    address: Optional[str]
+    address: str | None
     phone: str
     username: str
     password: str
@@ -14,10 +13,10 @@ class UserCreate(BaseModel):
 
 
 class UserUpdateProfile(BaseModel):
-    name: Optional[str]
-    address: Optional[str]
-    phone: Optional[str]
-    username: Optional[str]
+    name: str
+    address: str | None
+    phone: str
+    username: str
 
 
 class UserUpdate(UserCreate):
@@ -45,3 +44,7 @@ class UserPageResponse(BaseModel):
 
 class UserLoginResponse(BaseModel):
     access_token: str
+
+class UserUpdatePassword(BaseModel):
+    old_password: str
+    new_password: str

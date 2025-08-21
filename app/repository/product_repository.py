@@ -19,7 +19,7 @@ class ProductRepository:
         return self.db.query(self.model).filter(self.model.delete == False).all()
 
     def find_all_paginated(
-        self, skip: int, limit: int, sort_by: str, order: str, search: Optional[str]
+        self, skip: int, limit: int, sort_by: str, order: str, search: str | None
     ) -> Page:
         query = self.db.query(self.model).filter(self.model.delete == False)
         if search:

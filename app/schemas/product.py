@@ -1,4 +1,3 @@
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -6,8 +5,8 @@ from pydantic import BaseModel, ConfigDict
 class ProductResponse(BaseModel):
     id: str
     name: str
-    description: Optional[str]
-    iamge: Optional[str]
+    description: str | None
+    image: str | None
     inventory: list[str]
 
     model_config = ConfigDict(from_attributes=True)
@@ -16,15 +15,15 @@ class ProductResponse(BaseModel):
 class ProductOut(ProductResponse):
     id: str
     name: str
-    description: Optional[str]
-    image: Optional[str]
+    description: str | None
+    image: str | None
     model_config = ConfigDict(from_attributes=True)
 
 
 class ProductLandingPage(BaseModel):
     id: str
     name: str
-    image: Optional[str]
+    image: str | None
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -38,8 +37,7 @@ class ProductPageResponse(BaseModel):
 
 class ProductCreate(BaseModel):
     name: str
-    image: Optional[str]
-    description: Optional[str]
+    description: str | None
 
 
 class ProductUpdate(ProductCreate):
