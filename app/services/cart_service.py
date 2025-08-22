@@ -1,6 +1,7 @@
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from app.core.dependency import transactional
 from app.core.exception import BusinessError
 from app.models.cart import CartItem
 from app.models.order import Order, OrderItem
@@ -19,17 +20,26 @@ class CartService:
 
     def list_cart(self, user_id: str) -> list[CartItemResponse]:
         items = self.repo.find_all(user_id)
-        return [CartItemResponse(**item.__dict__) for item in items]
+        return [CartItemResponse(**item._mapping) for item in items]
 
+    @transactional
     def add_to_cart(self, user_id: str, item: CartItemCreate) -> JSONResponse:
-        cart = CartItem(
-            buyer_id=user_id,
-            seller_inventory_id=item.seller_inventory_id,
-            quantity=item.quantity,
+        entity = self.repo.get_by_buyer_id_and_inventory_id(
+            user_id, item.seller_inventory_id
         )
-        self.repo.create_cart(cart)
+        if entity:
+            entity.quantity += item.quantity
+            self.repo.update_cart(entity)
+        else:
+            cart = CartItem(
+                buyer_id=user_id,
+                seller_inventory_id=item.seller_inventory_id,
+                quantity=item.quantity,
+            )
+            self.repo.create_cart(cart)
         return JSONResponse(status_code=201, content={"detail": "Item added to cart"})
 
+    @transactional
     def update_cart_item(
         self, cart_item_id: str, quantity: int, user_id: str
     ) -> JSONResponse:
@@ -41,17 +51,19 @@ class CartService:
             raise BusinessError("Unauthorized to update this cart item")
 
         if quantity <= 0:
-            self.repo.delete_cart_item(cart_item_id)
+            self.repo.delete_cart_item(cart_item)
         else:
             cart_item.quantity = quantity
             self.repo.update_cart(cart_item)
 
         return JSONResponse(status_code=200, content={"detail": "Cart item updated"})
-    
+
+    @transactional
     def clear_cart(self, user_id: str) -> JSONResponse:
         self.repo.clear_cart(user_id)
         return JSONResponse(status_code=200, content={"detail": "Cart cleared"})
-    
+
+    @transactional
     def delete_cart_item(self, cart_item_id: str, user_id: str) -> JSONResponse:
         cart_item = self.repo.get_by_id(cart_item_id)
         if not cart_item:
@@ -63,49 +75,38 @@ class CartService:
         self.repo.delete_cart_item(cart_item)
         return JSONResponse(status_code=200, content={"detail": "Cart item deleted"})
 
+    @transactional
     def checkout(self, user_id: str):
-        try:
-            with self.db.begin():
-                items = self.repo.find_all(user_id)
-                if not items:
-                    raise BusinessError("Cart is empty")
+        items = self.repo.find_all(user_id)
+        if not items:
+            raise BusinessError("Cart is empty")
 
-                items_by_seller = {}
+        orders_by_seller = {}
 
-                for item in items:
-                    inv = self.inventory_repo.get_by_id_for_update(
-                        item.seller_inventory_id
-                    )
-                    if not inv:
-                        raise BusinessError("Inventory not found")
+        for item in items:
+            inv = self.inventory_repo.get_by_id_for_update(item.inventory_id)
+            if not inv:
+                raise BusinessError("Inventory not found")
 
-                    if inv.quantity < item.quantity:
-                        raise BusinessError("Stock not enough")
+            if inv.quantity < item.quantity:
+                raise BusinessError("Stock not enough")
 
-                    inv.quantity -= item.quantity
+            inv.quantity -= item.quantity
 
-                    if inv.seller_id not in items_by_seller:
-                        items_by_seller[inv.seller_id] = []
+            if inv.seller_id not in orders_by_seller:
+                orders_by_seller[inv.seller_id] = Order(
+                    buyer_id=user_id, seller_id=inv.seller_id, items=[]
+                )
 
-                    items_by_seller[inv.seller_id].append(
-                        OrderItem(
-                            seller_inventory_id=inv.id,
-                            quantity=item.quantity,
-                            price_at_purchase=inv.price,
-                        )
-                    )
+            orders_by_seller[inv.seller_id].items.append(
+                OrderItem(
+                    seller_inventory_id=inv.id,
+                    quantity=item.quantity,
+                    price_at_purchase=inv.price,
+                )
+            )
 
-                for seller_id, order_items in items_by_seller.items():
-                    self.order_repo.create_order_with_items(
-                        Order(
-                            buyer_id=user_id,
-                            seller_id=seller_id,
-                            items=order_items,
-                        )
-                    )
+        self.order_repo.create_order_with_items(list(orders_by_seller.values()))
+        self.repo.clear_cart(user_id)
 
-                return JSONResponse(status_code=201, content={"detail": "Order created"})
-
-        except Exception:
-            self.db.rollback()
-            raise
+        return JSONResponse(status_code=201, content={"detail": "Order created"})

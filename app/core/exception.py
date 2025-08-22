@@ -12,10 +12,10 @@ class BusinessError(HTTPException):
         super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
 
 
-INVALID_CREDENTIALS = HTTPException(
+UNAUTHORIZED = HTTPException(
     detail="Invalid credentials", status_code=status.HTTP_401_UNAUTHORIZED
 )
-UNAUTHORIZED = HTTPException(
+FORBIDDEN = HTTPException(
     detail="Unauthorized", status_code=status.HTTP_403_FORBIDDEN
 )
 

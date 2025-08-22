@@ -36,6 +36,7 @@ class OrderResponse(BaseModel):
     status: OrderStatus
     created_at: datetime
     updated_at: datetime
+    total: float
 
     model_config = ConfigDict(from_attributes=True)
 

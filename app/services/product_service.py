@@ -3,6 +3,7 @@ from fastapi import UploadFile
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from app.core.dependency import transactional
 from app.core.exception import BusinessError
 from app.models.product import Product
 from app.repository.product_repository import ProductRepository
@@ -45,6 +46,7 @@ class ProductService:
             raise BusinessError("Record Not Found")
         return ProductResponse(**entity.__dict__)
 
+    @transactional
     async def insert_product(self, data: ProductCreate, image: UploadFile):
         image_url = await util.save_upload_file(image)
         product = Product(
@@ -56,6 +58,7 @@ class ProductService:
         return JSONResponse(status_code=201, content={"detail": "Product created"})
 
 
+    @transactional
     async def update_product(self, data: ProductUpdate, image: UploadFile | None):
         entity = self.repo.find_by_id(data.id)
         if entity is None:
@@ -67,8 +70,10 @@ class ProductService:
 
         entity.name = data.name
         entity.description = data.description
-        return ProductResponse(**self.repo.update(entity).__dict__)
+        self.repo.update(entity)
+        return JSONResponse(status_code=200, content={"detail": "Product updated"})
 
+    @transactional
     def delete_product(self, product_id: str):
         entity = self.repo.find_by_id(product_id)
         if entity is None:

@@ -19,9 +19,11 @@ def find_paginated(
     Returns:
         Page: A Page object containing the paginated results and total count.
     """
+    total = query.count()
+
     if order == "asc":
         query = query.order_by(asc(text(sort_by)))
     else:
         query = query.order_by(desc(text(sort_by)))
     query = query.offset(skip).limit(limit)
-    return Page(data=query.all(), total=query.count())
+    return Page(data=query.all(), total=total)

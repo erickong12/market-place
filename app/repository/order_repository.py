@@ -1,6 +1,6 @@
-from sqlalchemy import not_
-from sqlalchemy.orm import Session, joinedload
-from app.models.order import Order
+from sqlalchemy import func, not_
+from sqlalchemy.orm import Session, joinedload, aliased
+from app.models.order import Order, OrderItem
 from app.models.user import User
 from app.repository.common import find_paginated
 from app.schemas.common import Page
@@ -16,19 +16,25 @@ class OrderRepository:
     def find_orders_by_seller(
         self, skip: int, limit: int, sort_by: str, order: str, seller_id: str
     ) -> Page:
+        buyer = aliased(User)
+        seller = aliased(User)
         query = (
             self.db.query(
                 self.model.id,
-                User.name.label("buyer_id"),
-                User.name.label("buyer_name"),
-                User.name.label("seller_id"),
-                User.name.label("seller_name"),
+                buyer.name.label("buyer_id"),
+                buyer.name.label("buyer_name"),
+                seller.name.label("seller_id"),
+                seller.name.label("seller_name"),
                 self.model.status,
                 self.model.created_at,
                 self.model.updated_at,
+                func.sum(OrderItem.quantity * OrderItem.price_at_purchase).label(
+                    "total"
+                ),
             )
-            .join(User, User.id == self.model.buyer_id)
-            .join(User, User.id == self.model.seller_id)
+            .join(buyer, buyer.id == Order.buyer_id)
+            .join(seller, seller.id == Order.seller_id)
+            .join(OrderItem, OrderItem.order_id == self.model.id)
             .filter(self.model.seller_id == seller_id)
             .filter(
                 not_(
@@ -41,25 +47,39 @@ class OrderRepository:
                     )
                 )
             )
+            .group_by(
+                self.model.id,
+                buyer.name,
+                seller.name,
+                self.model.status,
+                self.model.created_at,
+                self.model.updated_at,
+            )
         )
         return find_paginated(query, self.model, skip, limit, sort_by, order)
 
     def find_orders_by_buyer(
         self, skip: int, limit: int, sort_by: str, order: str, buyer_id: str
     ) -> Page:
+        buyer = aliased(User)
+        seller = aliased(User)
         query = (
             self.db.query(
                 self.model.id,
-                User.name.label("buyer_id"),
-                User.name.label("buyer_name"),
-                User.name.label("seller_id"),
-                User.name.label("seller_name"),
+                buyer.name.label("buyer_id"),
+                buyer.name.label("buyer_name"),
+                seller.name.label("seller_id"),
+                seller.name.label("seller_name"),
                 self.model.status,
                 self.model.created_at,
                 self.model.updated_at,
+                func.sum(OrderItem.quantity * OrderItem.price_at_purchase).label(
+                    "total"
+                ),
             )
-            .join(User, User.id == self.model.buyer_id)
-            .join(User, User.id == self.model.seller_id)
+            .join(buyer, buyer.id == Order.buyer_id)
+            .join(seller, seller.id == Order.seller_id)
+            .join(OrderItem, OrderItem.order_id == self.model.id)
             .filter(self.model.buyer_id == buyer_id)
             .filter(
                 not_(
@@ -71,6 +91,13 @@ class OrderRepository:
                         ]
                     )
                 )
+            ).group_by(
+                self.model.id,
+                buyer.name,
+                seller.name,
+                self.model.status,
+                self.model.created_at,
+                self.model.updated_at,
             )
         )
         return find_paginated(query, self.model, skip, limit, sort_by, order)
@@ -83,12 +110,10 @@ class OrderRepository:
             .first()
         )
 
-    def create_order_with_items(self, order: Order):
-        self.db.add(order)
-        self.db.commit()
-        return order
+    def create_order_with_items(self, order: list[Order]):
+        self.db.add_all(order)
 
     def update_order_status(self, order: Order, new_status: OrderStatus):
         order.status = new_status.value
-        self.db.commit()
+        self.db.add(order)
         return order

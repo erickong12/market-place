@@ -45,6 +45,12 @@ class UserPageResponse(BaseModel):
 class UserLoginResponse(BaseModel):
     access_token: str
 
+
+class UserToken(BaseModel):
+    id: str
+    role: RoleEnum
+
+
 class UserUpdatePassword(BaseModel):
     old_password: str
     new_password: str

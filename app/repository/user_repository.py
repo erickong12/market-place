@@ -29,14 +29,11 @@ class UserRepository:
 
     def save(self, user: User) -> User:
         self.db.add(user)
-        self.db.commit()
-        self.db.refresh(user)
         return user
 
     def update(self, entity: User) -> User:
-        self.db.commit()
+        self.db.add(entity)
         return entity
 
     def delete(self, entity: User) -> None:
         entity.delete = True
-        self.db.commit()

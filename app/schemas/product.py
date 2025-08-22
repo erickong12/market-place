@@ -7,7 +7,6 @@ class ProductResponse(BaseModel):
     name: str
     description: str | None
     image: str | None
-    inventory: list[str]
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -24,6 +23,11 @@ class ProductLandingPage(BaseModel):
     id: str
     name: str
     image: str | None
+    model_config = ConfigDict(from_attributes=True)
+
+class ProductDropListResponse(BaseModel):
+    id: str
+    name: str
     model_config = ConfigDict(from_attributes=True)
 
 

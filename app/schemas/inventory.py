@@ -32,6 +32,8 @@ class SellerInventoryResponse(BaseModel):
 
 class SellerInventoryDetailResponse(BaseModel):
     id: str
+    price: float
+    quantity: int
     product_id: str
     product_name: str
     product_image: str

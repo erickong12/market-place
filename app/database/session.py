@@ -11,10 +11,9 @@ def get_db():
     db = SessionLocal()
     try:
         yield db
-    except Exception:
-        db.rollback()
-        raise
     finally:
+        if db.in_transaction():
+            db.commit()
         db.close()
 
 

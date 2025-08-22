@@ -55,17 +55,19 @@ class SellerInventoryRepository:
             .with_for_update()
             .first()
         )
+    def get_by_product_and_seller_for_update(self, seller_id: str, product_id: str) -> Optional[SellerInventory]:
+        return (
+            self.db.query(self.model)
+            .filter(self.model.seller_id == seller_id, self.model.product_id == product_id)
+            .with_for_update()
+            .first()
+        )
 
     def create(self, entity: SellerInventory) -> SellerInventory:
         self.db.add(entity)
-        self.db.commit()
-        self.db.refresh(entity)
-        return entity
 
     def update(self, entity: SellerInventory) -> SellerInventory:
-        self.db.commit()
-        return entity
+        self.db.add(entity)
 
     def delete(self, entity: SellerInventory) -> None:
         entity.delete = True
-        self.db.commit()

@@ -85,3 +85,15 @@ def delete_file(url_path: str | None) -> None:
         local_path = url_path.replace(URL_PREFIX, UPLOAD_DIR)
         if os.path.exists(local_path):
             os.remove(local_path)
+
+
+def get_user_from_token(auth_header: str) -> str | None:
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return None
+
+    token = auth_header.split(" ")[1]
+    payload = verify_token(token)
+    if not payload:
+        return None
+    user_id: str = payload.get("data", {}).get("user_id")
+    return user_id

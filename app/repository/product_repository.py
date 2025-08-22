@@ -15,8 +15,8 @@ class ProductRepository:
         self.db = db
         self.model = Product
 
-    def find_all(self) -> list[Product]:
-        return self.db.query(self.model).filter(self.model.delete == False).all()
+    def find_all(self) -> list[tuple[str, str]]:
+        return self.db.query(self.model.id, self.model.name).filter(self.model.delete == False).all()
 
     def find_all_paginated(
         self, skip: int, limit: int, sort_by: str, order: str, search: str | None
@@ -55,14 +55,11 @@ class ProductRepository:
 
     def save(self, product: Product) -> Product:
         self.db.add(product)
-        self.db.commit()
-        self.db.refresh(product)
         return product
 
     def update(self, product: Product) -> Product:
-        self.db.commit()
+        self.db.add(product)
         return product
 
     def delete(self, product: Product) -> None:
         product.delete = True
-        self.db.commit()

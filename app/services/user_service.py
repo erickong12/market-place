@@ -1,5 +1,6 @@
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from app.core.dependency import transactional
 from app.core.exception import BusinessError
 from app.models.user import User
 from app.repository.user_repository import UserRepository
@@ -26,6 +27,7 @@ class UserService:
             result=result.data,
         )
 
+    @transactional
     def insert_user(self, data: UserCreate) -> UserResponse:
         entity = self.repo.find_by_username(data.username)
         if entity is not None:
@@ -41,6 +43,7 @@ class UserService:
         self.repo.save(user)
         return JSONResponse(status_code=201, content={"detail": "User created"})
 
+    @transactional
     def delete_user(self, user_id: str) -> dict:
         entity = self.repo.find_by_id(user_id)
         if entity is None:

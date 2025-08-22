@@ -1,6 +1,7 @@
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from app.core.exception import INVALID_CREDENTIALS
+from app.core.dependency import transactional
+from app.core.exception import BusinessError
 from app.models.user import User
 from app.repository.user_repository import UserRepository
 from app.schemas.user import (
@@ -21,7 +22,7 @@ class AuthService:
     def authenticate_user(self, username: str, password: str):
         result = self.repo.find_by_username(username)
         if not result or not verify_password(password, result.password):
-            raise INVALID_CREDENTIALS
+            raise BusinessError("Invalid credentials")
         return UserLoginResponse(
             access_token=create_access_token({"data": {"user_id": result.id}})
         )
@@ -29,13 +30,14 @@ class AuthService:
     def get_profile(self, user_id: str):
         user = self.repo.find_by_id(user_id)
         if not user:
-            raise INVALID_CREDENTIALS("User not found")
+            raise BusinessError("User not found")
         return UserResponse(**user.__dict__)
 
+    @transactional
     def register_user(self, data: UserCreate):
         existing_user = self.repo.find_by_username(data.username)
         if existing_user:
-            raise INVALID_CREDENTIALS("User already exists")
+            raise BusinessError("User already exists")
         user = User(
             name=data.name,
             address=data.address,
@@ -47,10 +49,11 @@ class AuthService:
         self.repo.save(user)
         return JSONResponse(status_code=200, content={"detail": "User created"})
 
+    @transactional
     def update_profile(self, user_id: str, data: UserUpdateProfile):
         user = self.repo.find_by_id(user_id)
         if not user:
-            raise INVALID_CREDENTIALS("User not found")
+            raise BusinessError("User not found")
         user.username = data.username
         user.name = data.name
         user.phone = data.phone
@@ -58,10 +61,11 @@ class AuthService:
         self.repo.update(user)
         return UserResponse(**user.__dict__)
 
+    @transactional
     def change_password(self, user_id: str, old_password: str, new_password: str):
         user = self.repo.find_by_id(user_id)
         if not user or not verify_password(old_password, user.password):
-            raise INVALID_CREDENTIALS
+            raise BusinessError("Invalid credentials")
         user.password = util.hash_password(new_password)
         self.repo.update(user)
         return JSONResponse(status_code=200, content={"detail": "Password changed"})
