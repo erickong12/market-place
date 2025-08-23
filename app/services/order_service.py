@@ -43,14 +43,18 @@ class OrderService:
             result=result.data,
         )
 
-    def get_order_history(self, user: User):
+    def get_order_history(
+        self, user: User, page: int, size: int, sort_by: str, order: str
+    ):
+        skip = (page - 1) * size
+        limit = size
         if user.role == RoleEnum.SELLER:
             result = self.repo.find_orders_by_seller(
-                0, 100, "created_at", "desc", user.id
+                skip, limit, sort_by, order, user.id, True
             )
         elif user.role == RoleEnum.BUYER:
             result = self.repo.find_orders_by_buyer(
-                0, 100, "created_at", "desc", user.id
+                skip, limit, sort_by, order, user.id, True
             )
         return OrderPageResponse(
             page=1,
@@ -62,7 +66,7 @@ class OrderService:
 
     def get_order_items(self, order_id: str) -> list[OrderItemResponse]:
         result = self.repo_order_item.find_orders_items(order_id)
-        return [OrderItemResponse(**item.__dict__) for item in result]
+        return [OrderItemResponse(**item._mapping) for item in result]
 
     @transactional
     def update_order_status(

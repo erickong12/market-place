@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.dependency import transactional
 from app.core.exception import BusinessError
 from app.models.product import Product
+from app.repository.inventory_repository import SellerInventoryRepository
 from app.repository.product_repository import ProductRepository
 from app.schemas.product import (
     ProductCreate,
@@ -21,6 +22,7 @@ class ProductService:
     def __init__(self, db: Session):
         self.db = db
         self.repo = ProductRepository(db)
+        self.inventory_repo = SellerInventoryRepository(db)
 
     def get_paginated(
         self, page: int, size: int, sort_by: str, order: str, search: str | None = None
@@ -38,7 +40,7 @@ class ProductService:
 
     def get_landing_page(self, limit: int) -> list[ProductLandingPage]:
         result = self.repo.find_top_products(limit)
-        return [ProductLandingPage(**item.__dict__) for item in result]
+        return [ProductLandingPage(**item._mapping) for item in result]
 
     def get_product_by_id(self, product_id: str) -> ProductResponse:
         entity = self.repo.find_by_id(product_id)
@@ -78,8 +80,8 @@ class ProductService:
         entity = self.repo.find_by_id(product_id)
         if entity is None:
             raise BusinessError("Record Not Found")
-        # Remove old image if exists
         if entity.image and os.path.exists(entity.image):
             os.remove(entity.image)
         self.repo.delete(entity)
+        self.inventory_repo.delete_by_product_id(product_id)
         return JSONResponse(status_code=200, content={"detail": "Product deleted"})

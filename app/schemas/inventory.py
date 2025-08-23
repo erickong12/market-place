@@ -8,11 +8,6 @@ class SellerInventoryCreate(BaseModel):
     price: float
     quantity: int
 
-
-class SellerInventoryUpdate(SellerInventoryCreate):
-    id: str
-
-
 class SellerInventoryOut(BaseModel):
     id: str
     price: float

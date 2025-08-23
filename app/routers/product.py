@@ -32,8 +32,7 @@ def list_inventory(
 @router.get("/landing", response_model=list[ProductLandingPage])
 def landing_page(
     limit: int = 5,
-    search: str | None = None,
     db: Session = Depends(get_db),
 ):
     service = ProductService(db)
-    return service.get_landing_page(limit, search)
+    return service.get_landing_page(limit)

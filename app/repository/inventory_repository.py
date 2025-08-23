@@ -71,3 +71,6 @@ class SellerInventoryRepository:
 
     def delete(self, entity: SellerInventory) -> None:
         entity.delete = True
+
+    def delete_by_product_id(self, product_id: str) -> None:
+        self.db.query(self.model).filter(self.model.product_id == product_id).update({"delete": True})

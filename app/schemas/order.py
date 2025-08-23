@@ -17,7 +17,6 @@ class OrderCreate(BaseModel):
 
 class OrderItemResponse(BaseModel):
     id: str
-    product_id: str
     product_name: str
     product_image: str
     product_description: str

@@ -15,10 +15,9 @@ class OrderItemRepository:
                 self.model.id,
                 self.model.quantity,
                 self.model.price_at_purchase,
-                SellerInventory.id.label("inventory_id"),
-                Product.id.label("product_id"),
                 Product.name.label("product_name"),
                 Product.image.label("product_image"),
+                Product.description.label("product_description"),
             )
             .join(SellerInventory, SellerInventory.id == self.model.seller_inventory_id)
             .join(Product, Product.id == SellerInventory.product_id)

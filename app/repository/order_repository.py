@@ -13,11 +13,10 @@ class OrderRepository:
         self.db = db
         self.model = Order
 
-    def find_orders_by_seller(
-        self, skip: int, limit: int, sort_by: str, order: str, seller_id: str
-    ) -> Page:
+    def __build_order_query(self, party: str, party_id: str, history: bool):
         buyer = aliased(User)
         seller = aliased(User)
+
         query = (
             self.db.query(
                 self.model.id,
@@ -35,71 +34,51 @@ class OrderRepository:
             .join(buyer, buyer.id == Order.buyer_id)
             .join(seller, seller.id == Order.seller_id)
             .join(OrderItem, OrderItem.order_id == self.model.id)
-            .filter(self.model.seller_id == seller_id)
-            .filter(
-                not_(
-                    self.model.status.in_(
-                        [
-                            OrderStatus.DONE,
-                            OrderStatus.CANCELLED,
-                            OrderStatus.AUTO_CANCELLED,
-                        ]
-                    )
-                )
-            )
-            .group_by(
-                self.model.id,
-                buyer.name,
-                seller.name,
-                self.model.status,
-                self.model.created_at,
-                self.model.updated_at,
-            )
+            .filter(getattr(self.model, f"{party}_id") == party_id)
         )
+
+        status_filter = [
+            OrderStatus.DONE,
+            OrderStatus.CANCELLED,
+            OrderStatus.AUTO_CANCELLED,
+        ]
+
+        if history:
+            query = query.filter(self.model.status.in_(status_filter))
+        else:
+            query = query.filter(not_(self.model.status.in_(status_filter)))
+
+        return query.group_by(
+            self.model.id,
+            buyer.name,
+            seller.name,
+            self.model.status,
+            self.model.created_at,
+            self.model.updated_at,
+        )
+
+    def find_orders_by_seller(
+        self,
+        skip: int,
+        limit: int,
+        sort_by: str,
+        order: str,
+        seller_id: str,
+        history: bool = False,
+    ) -> Page:
+        query = self.__build_order_query("seller", seller_id, history)
         return find_paginated(query, self.model, skip, limit, sort_by, order)
 
     def find_orders_by_buyer(
-        self, skip: int, limit: int, sort_by: str, order: str, buyer_id: str
+        self,
+        skip: int,
+        limit: int,
+        sort_by: str,
+        order: str,
+        buyer_id: str,
+        history: bool = False,
     ) -> Page:
-        buyer = aliased(User)
-        seller = aliased(User)
-        query = (
-            self.db.query(
-                self.model.id,
-                buyer.name.label("buyer_id"),
-                buyer.name.label("buyer_name"),
-                seller.name.label("seller_id"),
-                seller.name.label("seller_name"),
-                self.model.status,
-                self.model.created_at,
-                self.model.updated_at,
-                func.sum(OrderItem.quantity * OrderItem.price_at_purchase).label(
-                    "total"
-                ),
-            )
-            .join(buyer, buyer.id == Order.buyer_id)
-            .join(seller, seller.id == Order.seller_id)
-            .join(OrderItem, OrderItem.order_id == self.model.id)
-            .filter(self.model.buyer_id == buyer_id)
-            .filter(
-                not_(
-                    self.model.status.in_(
-                        [
-                            OrderStatus.DONE,
-                            OrderStatus.CANCELLED,
-                            OrderStatus.AUTO_CANCELLED,
-                        ]
-                    )
-                )
-            ).group_by(
-                self.model.id,
-                buyer.name,
-                seller.name,
-                self.model.status,
-                self.model.created_at,
-                self.model.updated_at,
-            )
-        )
+        query = self.__build_order_query("buyer", buyer_id, history)
         return find_paginated(query, self.model, skip, limit, sort_by, order)
 
     def get_order_by_id(self, order_id: str) -> Optional[Order]:

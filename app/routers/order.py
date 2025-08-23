@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.models.user import User
-from app.schemas.order import OrderItemResponse, OrderPageResponse, OrderResponse
+from app.schemas.order import OrderItemResponse, OrderPageResponse
 from app.services.order_service import OrderService
 from app.core.dependency import require_roles
 from app.utils.enums import OrderStatus, RoleEnum
@@ -37,7 +37,7 @@ def get_order(
     return service.get_order_items(order_id)
 
 
-@router.patch("/{order_id}/confirm", response_model=OrderResponse)
+@router.patch("/{order_id}/confirm")
 def confirm_order(
     order_id: str,
     user: User = Depends(require_roles(RoleEnum.SELLER)),
@@ -47,17 +47,7 @@ def confirm_order(
     return service.update_order_status(order_id, OrderStatus.CONFIRMED, user)
 
 
-@router.patch("/{order_id}/reject", response_model=OrderResponse)
-def reject_order(
-    order_id: str,
-    user: User = Depends(require_roles(RoleEnum.SELLER)),
-    db: Session = Depends(get_db),
-):
-    service = OrderService(db)
-    return service.update_order_status(order_id, OrderStatus.CANCELLED, user)
-
-
-@router.patch("/{order_id}/ready", response_model=OrderResponse)
+@router.patch("/{order_id}/ready")
 def ready_order(
     order_id: str,
     user: User = Depends(require_roles(RoleEnum.SELLER)),
@@ -67,20 +57,20 @@ def ready_order(
     return service.update_order_status(order_id, OrderStatus.READY, user)
 
 
-@router.patch("/{order_id}/done", response_model=OrderResponse)
+@router.patch("/{order_id}/done")
 def complete_order(
     order_id: str,
-    user: User = Depends(require_roles(RoleEnum.SELLER)),
+    user: User = Depends(require_roles(RoleEnum.BUYER)),
     db: Session = Depends(get_db),
 ):
     service = OrderService(db)
     return service.update_order_status(order_id, OrderStatus.DONE, user)
 
 
-@router.patch("/{order_id}/cancel", response_model=OrderResponse)
+@router.patch("/{order_id}/cancel")
 def cancel_order(
     order_id: str,
-    user: User = Depends(require_roles(RoleEnum.SELLER)),
+    user: User = Depends(require_roles(RoleEnum.SELLER, RoleEnum.BUYER)),
     db: Session = Depends(get_db),
 ):
     service = OrderService(db)
@@ -89,8 +79,12 @@ def cancel_order(
 
 @router.get("/history", response_model=OrderPageResponse)
 def order_history(
+    page: int = 1,
+    size: int = 10,
+    sort_by: str = "created_at",
+    order: str = "desc",
     user: User = Depends(require_roles(RoleEnum.SELLER, RoleEnum.BUYER)),
     db: Session = Depends(get_db),
 ):
     service = OrderService(db)
-    return service.get_order_history(user)
+    return service.get_order_history(user, page, size, sort_by, order)

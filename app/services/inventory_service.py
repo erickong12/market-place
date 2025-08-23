@@ -9,7 +9,6 @@ from app.schemas.inventory import (
     SellerInventoryCreate,
     SellerInventoryPageResponse,
     SellerInventoryResponse,
-    SellerInventoryUpdate,
 )
 from app.schemas.product import ProductDropListResponse
 
@@ -72,8 +71,8 @@ class SellerInventoryService:
         return JSONResponse(status_code=201, content={"detail": "Inventory created"})
 
     @transactional
-    def update_inventory(self, data: SellerInventoryUpdate):
-        entity = self.repo.get_by_id(data.id)
+    def update_inventory(self, inventory_id: str, data: SellerInventoryCreate):
+        entity = self.repo.get_by_id(inventory_id)
         if entity is None:
             raise BusinessError("Record Not Found")
         if data.quantity < 0:
