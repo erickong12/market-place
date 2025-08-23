@@ -24,7 +24,7 @@ app.add_exception_handler(Exception, http_exception_handler)
 # --- Middleware! ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # change to specific origins in production
+    allow_origins=["https://market-place-front-end-production.up.railway.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
