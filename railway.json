@@ -1,9 +1,8 @@
 {
 	"build": {
-		"builder": "NIXPACKS",
-		"buildCommand": "npm install && npm run build"
+		"builder": "DOCKERFILE"
 	},
 	"deploy": {
-		"startCommand": "npm run preview -- --port $PORT"
+		"startCommand": "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
 	}
 }
