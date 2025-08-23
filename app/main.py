@@ -7,12 +7,16 @@ from app.database.base import Base
 from app.database.session import engine
 from app.core.exception import http_exception_handler
 from app.routers import admin, auth, cart, order, product, seller_inventory
+from app.task.auto_cancel import start_scheduler
 
 # --- Create DB tables ---
 Base.metadata.create_all(bind=engine)
 
 # --- FastAPI app ---
 app = FastAPI()
+
+# --- Scheduled tasks ---
+app.on_event("startup")(start_scheduler)
 
 # --- Custom global exception handler with CORS headers ---
 app.add_exception_handler(Exception, http_exception_handler)
